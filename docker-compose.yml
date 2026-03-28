@@ -1,0 +1,15 @@
+services:
+  fathom:
+    build: .
+    container_name: fathom
+    restart: unless-stopped
+    ports:
+      - "100.114.205.53:8889:3000"
+    volumes:
+      - /docker/fathom/assets:/usr/share/nginx/html/assets:ro
+    networks:
+      - searxng_default
+
+networks:
+  searxng_default:
+    external: true

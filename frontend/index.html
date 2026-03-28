@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fathom</title>
+  <meta name="description" content="search the depths">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/favicon.png">
+  <link rel="search" type="application/opensearchdescription+xml" title="Fathom" href="/opensearch.xml">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#050810">
+  <!-- OG / Twitter Card -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://search.boogaardmusic.com">
+  <meta property="og:title" content="Fathom">
+  <meta property="og:description" content="search the depths">
+  <meta property="og:image" content="https://search.boogaardmusic.com/assets/og-banner.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Fathom">
+  <meta name="twitter:description" content="search the depths">
+  <meta name="twitter:image" content="https://search.boogaardmusic.com/assets/og-banner.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #050810;
+      --bg1:       #080d18;
+      --bg2:       #0d1525;
+      --bg3:       #111c30;
+      --cyan:      #00e5ff;
+      --cyan-dim:  #007a8a;
+      --cyan-dark: #003d47;
+      --text:      #c8e8f0;
+      --text2:     #6a9aaa;
+      --text3:     #2a4a55;
+      --border:    #0f2535;
+      --mono:      'Share Tech Mono', monospace;
+      --display:   'Rajdhani', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--display);
+      overflow-x: hidden;
+    }
+
+    /* grid bg */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* scanline overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HOME ── */
+    #home {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      gap: 2.5rem;
+    }
+
+    .logo-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .logo-img {
+      width: 320px;
+      max-width: 80vw;
+      height: auto;
+      filter: drop-shadow(0 0 16px rgba(0,229,255,0.25));
+    }
+
+    .logo-sub {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text2);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    /* ── SEARCH BOX ── */
+    .search-wrap {
+      width: 100%;
+      max-width: 640px;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: var(--bg2);
+      border: 1px solid var(--cyan-dim);
+      border-radius: 4px;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 1px var(--cyan), 0 0 20px rgba(0,229,255,0.1);
+    }
+
+    .search-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 0.85rem 1.1rem;
+      font-family: var(--display);
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text);
+      caret-color: var(--cyan);
+    }
+
+    .search-input::placeholder { color: var(--text3); }
+
+    .search-btn {
+      background: var(--cyan);
+      border: none;
+      padding: 0.85rem 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .search-btn:hover { background: #33eeff; }
+    .search-btn svg { width: 20px; height: 20px; color: var(--bg); }
+
+    /* ── CATEGORIES ── */
+    .cats {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    .cat-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .cat-btn {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.9rem;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .cat-btn:hover { border-color: var(--cyan-dim); color: var(--text); }
+    .cat-btn.active {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      background: rgba(0,229,255,0.06);
+    }
+
+    /* ── FILTERS ── */
+    .filters {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      animation: fadeUp 0.6s 0.25s ease both;
+    }
+
+    .filter-select {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.32rem 0.7rem;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      color: var(--text2);
+      border-radius: 2px;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      transition: all 0.15s;
+    }
+
+    .filter-select:focus, .filter-select:hover {
+      border-color: var(--cyan-dim);
+      color: var(--text);
+    }
+
+    .filter-select option { background: var(--bg2); color: var(--text); }
+
+    .header-filters {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+    }
+
+    /* ── RESULTS PAGE ── */
+    #results-page {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+    }
+
+    #results-page.visible { display: flex; }
+
+    /* results header */
+    .results-header {
+      background: var(--bg1);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .header-logo svg { width: 28px; height: 28px; filter: drop-shadow(0 0 6px rgba(0,229,255,0.4)); }
+
+    .header-logo-text {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: var(--cyan);
+    }
+
+    .header-search-box {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      align-items: center;
+      background: var(--bg2);
+      border: 1px solid var(--cyan-dim);
+      border-radius: 3px;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .header-search-box:focus-within {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 1px var(--cyan);
+    }
+
+    .header-search-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 0.55rem 0.9rem;
+      font-family: var(--display);
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text);
+      caret-color: var(--cyan);
+    }
+
+    .header-search-input::placeholder { color: var(--text3); }
+
+    .header-search-btn {
+      background: var(--cyan);
+      border: none;
+      padding: 0.55rem 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: background 0.15s;
+    }
+
+    .header-search-btn:hover { background: #33eeff; }
+    .header-search-btn svg { width: 16px; height: 16px; color: var(--bg); }
+
+    .header-cat-row {
+      display: flex;
+      gap: 0.4rem;
+      justify-content: flex-start;
+    }
+
+    .header-cats {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .header-cat-btn {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.28rem 0.7rem;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .header-cat-btn:hover { border-color: var(--cyan-dim); color: var(--text); }
+    .header-cat-btn.active {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      background: rgba(0,229,255,0.06);
+    }
+
+    /* results body */
+    .results-body {
+      flex: 1;
+      display: flex;
+      gap: 0;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem 1.5rem 3rem;
+    }
+
+    .results-main { flex: 1; min-width: 0; }
+
+    .results-meta {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--text2);
+      letter-spacing: 0.08em;
+      margin-bottom: 1.2rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── WEB RESULTS ── */
+    .result-item {
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .result-url {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--cyan-dim);
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .result-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--cyan);
+      text-decoration: none;
+      line-height: 1.3;
+      display: block;
+      margin-bottom: 0.35rem;
+      transition: color 0.15s;
+    }
+
+    .result-title:hover { color: #33eeff; text-decoration: underline; }
+
+    .result-snippet {
+      font-size: 0.9rem;
+      color: var(--text2);
+      line-height: 1.55;
+    }
+
+    .result-engines {
+      margin-top: 0.4rem;
+      display: flex;
+      gap: 0.3rem;
+      flex-wrap: wrap;
+    }
+
+    .engine-tag {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.08em;
+      color: var(--text3);
+      border: 1px solid var(--border);
+      padding: 0.1rem 0.4rem;
+      border-radius: 2px;
+    }
+
+    /* ── IMAGE RESULTS ── */
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .image-item {
+      aspect-ratio: 16/10;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      cursor: pointer;
+      position: relative;
+      animation: fadeUp 0.3s ease both;
+      transition: border-color 0.15s;
+    }
+
+    .image-item:hover { border-color: var(--cyan-dim); }
+
+    .image-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.2s;
+    }
+
+    .image-item:hover img { opacity: 0.85; }
+
+    .image-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(5,8,16,0.9));
+      padding: 0.4rem 0.5rem 0.35rem;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--text2);
+      opacity: 0;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .image-item:hover .image-overlay { opacity: 1; }
+
+    /* ── NEWS RESULTS ── */
+    .news-item {
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.5rem 1rem;
+      align-items: start;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .news-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--cyan);
+      text-decoration: none;
+      line-height: 1.3;
+      display: block;
+      margin-bottom: 0.3rem;
+      transition: color 0.15s;
+    }
+
+    .news-title:hover { color: #33eeff; }
+
+    .news-source {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--cyan-dim);
+      letter-spacing: 0.05em;
+    }
+
+    .news-date {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text3);
+      white-space: nowrap;
+    }
+
+    .news-snippet {
+      font-size: 0.88rem;
+      color: var(--text2);
+      line-height: 1.5;
+      grid-column: 1 / -1;
+      margin-top: 0.2rem;
+    }
+
+    /* ── LOADING ── */
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 2rem 0;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text2);
+      letter-spacing: 0.1em;
+    }
+
+    .ping {
+      width: 20px;
+      height: 20px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .ping::before, .ping::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid var(--cyan);
+    }
+
+    .ping::before { animation: ping 1.2s ease-out infinite; }
+    .ping::after { animation: ping 1.2s 0.4s ease-out infinite; }
+
+    @keyframes ping {
+      0% { transform: scale(0.3); opacity: 1; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    /* ── ERROR ── */
+    .error-msg {
+      padding: 1.5rem 0;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: #ff4466;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── NO RESULTS ── */
+    .no-results {
+      padding: 2rem 0;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--text3);
+      letter-spacing: 0.08em;
+    }
+
+    /* ── PAGINATION ── */
+    .pagination {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 2rem;
+      align-items: center;
+    }
+
+    .page-btn {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      padding: 0.4rem 0.9rem;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      border-radius: 2px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .page-btn:hover { border-color: var(--cyan-dim); color: var(--text); }
+    .page-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,229,255,0.06); }
+    .page-btn:disabled { opacity: 0.3; cursor: default; }
+
+    /* ── DEPTH INDICATOR ── */
+    .depth-indicator {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text3);
+      letter-spacing: 0.1em;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .depth-bar {
+      width: 60px;
+      height: 2px;
+      background: var(--bg3);
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .depth-fill {
+      height: 100%;
+      background: var(--cyan);
+      border-radius: 1px;
+      transition: width 0.5s ease;
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    /* desktop: cats in one row */
+    @media (min-width: 601px) {
+      .cats { flex-direction: row; flex-wrap: wrap; }
+      .cat-row { display: contents; }
+      .header-cats { flex-direction: row; flex-wrap: wrap; }
+      .header-cat-row { display: contents; }
+    }
+
+    @media (max-width: 600px) {
+      .logo-title { font-size: 2.2rem; }
+      .results-header { gap: 0.6rem; padding: 0.6rem 1rem; }
+      .results-body { padding: 1rem 1rem 2rem; }
+      .image-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+      .news-item { grid-template-columns: 1fr; }
+      .news-date { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <div id="home">
+    <div class="logo-wrap">
+      <img class="logo-img" src="/assets/logo.png" alt="Fathom">
+      <div class="logo-sub">search the depths</div>
+    </div>
+
+    <div class="search-wrap">
+      <div class="search-box">
+        <input class="search-input" id="home-input" type="text" placeholder="dive in..." autocomplete="off" autofocus>
+        <button class="search-btn" id="home-btn" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="cats" id="home-cats">
+      <div class="cat-row">
+        <button class="cat-btn active" data-cat="general">web</button>
+        <button class="cat-btn" data-cat="images">images</button>
+        <button class="cat-btn" data-cat="news">news</button>
+        <button class="cat-btn" data-cat="videos">videos</button>
+      </div>
+      <div class="cat-row">
+        <button class="cat-btn" data-cat="it">it</button>
+        <button class="cat-btn" data-cat="science">science</button>
+        <button class="cat-btn" data-cat="science">academics</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS PAGE -->
+  <div id="results-page">
+    <div class="results-header">
+      <div class="header-logo" id="header-logo">
+        <img src="/assets/logo.png" alt="Fathom" style="height:32px;width:auto;filter:drop-shadow(0 0 6px rgba(0,229,255,0.3));">
+      </div>
+
+      <div class="header-search-box">
+        <input class="header-search-input" id="header-input" type="text" placeholder="search..." autocomplete="off">
+        <button class="header-search-btn" id="header-btn" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="header-cats" id="header-cats">
+        <div class="header-cat-row">
+          <button class="header-cat-btn active" data-cat="general">web</button>
+          <button class="header-cat-btn" data-cat="images">images</button>
+          <button class="header-cat-btn" data-cat="news">news</button>
+          <button class="header-cat-btn" data-cat="videos">videos</button>
+        </div>
+        <div class="header-cat-row">
+          <button class="header-cat-btn" data-cat="it">it</button>
+          <button class="header-cat-btn" data-cat="science">science</button>
+          <button class="header-cat-btn" data-cat="science">academics</button>
+        </div>
+      </div>
+      <div class="header-filters">
+        <select class="filter-select" id="header-time">
+          <option value="">any time</option>
+          <option value="day">past day</option>
+          <option value="week">past week</option>
+          <option value="month">past month</option>
+          <option value="year">past year</option>
+        </select>
+        <select class="filter-select" id="header-safe">
+          <option value="0">safe search off</option>
+          <option value="1">safe search moderate</option>
+          <option value="2">safe search strict</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="results-body">
+      <div class="results-main" id="results-main"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const SEARXNG = '/searxng';  // proxied path to SearXNG JSON API
+
+  let state = {
+    query: '',
+    category: 'general',
+    page: 1,
+    time: '',
+    safe: '0',
+  };
+
+  // ── DOM ──
+  const homeEl       = document.getElementById('home');
+  const resultsEl    = document.getElementById('results-page');
+  const homeInput    = document.getElementById('home-input');
+  const headerInput  = document.getElementById('header-input');
+  const resultsMain  = document.getElementById('results-main');
+
+  // ── CATEGORY BUTTONS ──
+  function bindCats(containerEl, prefix) {
+    containerEl.querySelectorAll('[data-cat]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        containerEl.querySelectorAll('[data-cat]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.category = btn.dataset.cat;
+        syncCats();
+        if (state.query) { state.page = 1; doSearch(); }
+      });
+    });
+  }
+
+  function syncCats() {
+    ['home-cats', 'header-cats'].forEach(id => {
+      const el = document.getElementById(id);
+      el.querySelectorAll('[data-cat]').forEach(b => {
+        b.classList.toggle('active', b.dataset.cat === state.category);
+      });
+    });
+  }
+
+  bindCats(document.getElementById('home-cats'));
+  bindCats(document.getElementById('header-cats'));
+
+  // ── SEARCH TRIGGER ──
+  document.getElementById('home-btn').addEventListener('click', () => startSearch(homeInput.value));
+  homeInput.addEventListener('keydown', e => { if (e.key === 'Enter') startSearch(homeInput.value); });
+
+  document.getElementById('header-btn').addEventListener('click', () => startSearch(headerInput.value));
+  headerInput.addEventListener('keydown', e => { if (e.key === 'Enter') startSearch(headerInput.value); });
+
+  document.getElementById('header-logo').addEventListener('click', goHome);
+
+  function startSearch(q) {
+    q = q.trim();
+    if (!q) return;
+    state.query = q;
+    state.page = 1;
+    doSearch();
+  }
+
+  function goHome() {
+    homeEl.style.display = 'flex';
+    resultsEl.classList.remove('visible');
+    homeInput.value = '';
+    homeInput.focus();
+    state.query = '';
+    history.pushState({}, '', '/');
+  }
+
+  // ── SEARCH ──
+  async function doSearch() {
+    showResults();
+    headerInput.value = state.query;
+
+    resultsMain.innerHTML = `
+      <div class="loading">
+        <div class="ping"></div>
+        <span>SCANNING DEPTHS...</span>
+      </div>`;
+
+    const params = new URLSearchParams({
+      q: state.query,
+      categories: state.category,
+      format: 'json',
+      pageno: state.page,
+      safesearch: state.safe,
+    });
+    if (state.time) params.set('time_range', state.time);
+
+    history.pushState({}, '', `?q=${encodeURIComponent(state.query)}&cat=${state.category}&p=${state.page}&time=${state.time}&safe=${state.safe}`);
+
+    try {
+      const res = await fetch(`${SEARXNG}/search?${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      renderResults(data);
+    } catch(err) {
+      resultsMain.innerHTML = `<div class="error-msg">// ERROR: ${err.message}</div>`;
+    }
+  }
+
+  function showResults() {
+    homeEl.style.display = 'none';
+    resultsEl.classList.add('visible');
+  }
+
+  // ── RENDER ──
+  function renderResults(data) {
+    const results = data.results || [];
+    const total   = data.number_of_results || 0;
+
+    let html = `<div class="results-meta">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <span>// ${total.toLocaleString()} SIGNALS DETECTED</span>
+        <div class="depth-indicator">
+          DEPTH
+          <div class="depth-bar"><div class="depth-fill" style="width:${Math.min(state.page * 10, 100)}%"></div></div>
+          ${state.page * 10}m
+        </div>
+      </div>
+    </div>`;
+
+    if (!results.length) {
+      html += `<div class="no-results">// NO SIGNALS AT THIS DEPTH — TRY DIFFERENT COORDINATES</div>`;
+    } else if (state.category === 'images') {
+      html += renderImages(results);
+    } else if (state.category === 'news') {
+      html += renderNews(results);
+    } else {
+      html += renderWeb(results);
+    }
+
+    if (results.length) {
+      html += renderPagination();
+    }
+
+    resultsMain.innerHTML = html;
+
+    // pagination events
+    resultsMain.querySelectorAll('.page-btn[data-page]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.page = parseInt(btn.dataset.page);
+        doSearch();
+        window.scrollTo(0, 0);
+      });
+    });
+
+    // image lazy load fallback
+    resultsMain.querySelectorAll('img[data-src]').forEach(img => {
+      img.src = img.dataset.src;
+      img.onerror = () => { img.closest('.image-item')?.remove(); };
+    });
+  }
+
+  function renderWeb(results) {
+    return results.map(r => `
+      <div class="result-item">
+        <div class="result-url">${escHtml(r.parsed_url?.[1] || '') + escHtml(r.parsed_url?.[2] || '')}</div>
+        <a class="result-title" href="${escAttr(r.url)}" target="_blank" rel="noopener">${escHtml(r.title || r.url)}</a>
+        ${r.content ? `<div class="result-snippet">${escHtml(r.content)}</div>` : ''}
+        <div class="result-engines">${(r.engines||[]).map(e => `<span class="engine-tag">${escHtml(e)}</span>`).join('')}</div>
+      </div>`).join('');
+  }
+
+  function renderImages(results) {
+    const items = results.filter(r => r.img_src || r.thumbnail_src);
+    if (!items.length) return `<div class="no-results">// NO IMAGE SIGNALS</div>`;
+    return `<div class="image-grid">${items.map(r => `
+      <div class="image-item">
+        <img data-src="${escAttr(r.thumbnail_src || r.img_src)}" alt="${escAttr(r.title||'')}" loading="lazy">
+        <div class="image-overlay">${escHtml(r.title||'')}</div>
+      </div>`).join('')}</div>`;
+  }
+
+  function renderNews(results) {
+    return results.map(r => `
+      <div class="news-item">
+        <div>
+          <a class="news-title" href="${escAttr(r.url)}" target="_blank" rel="noopener">${escHtml(r.title||r.url)}</a>
+          <span class="news-source">${escHtml(r.engine||'')}</span>
+        </div>
+        <span class="news-date">${r.publishedDate ? fmtDate(r.publishedDate) : ''}</span>
+        ${r.content ? `<div class="news-snippet">${escHtml(r.content)}</div>` : ''}
+      </div>`).join('');
+  }
+
+  function renderPagination() {
+    const prev = state.page > 1;
+    const pages = [state.page - 1, state.page, state.page + 1].filter(p => p > 0);
+    return `<div class="pagination">
+      <button class="page-btn" data-page="${state.page - 1}" ${!prev ? 'disabled' : ''}>← ASCEND</button>
+      ${pages.map(p => `<button class="page-btn ${p === state.page ? 'active' : ''}" data-page="${p}">${p}</button>`).join('')}
+      <button class="page-btn" data-page="${state.page + 1}">DIVE DEEPER →</button>
+    </div>`;
+  }
+
+  // ── UTILS ──
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escAttr(s) { return escHtml(s); }
+  function fmtDate(s) {
+    try { return new Date(s).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}); }
+    catch { return s; }
+  }
+
+  // ── URL STATE ──
+  function syncFilters() {
+    const time = state.time;
+    const safe = state.safe;
+    ['home-time','header-time'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = time;
+    });
+    ['home-safe','header-safe'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = safe;
+    });
+  }
+
+  // wire filter change events
+  ['home-time','header-time'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', e => {
+      state.time = e.target.value;
+      syncFilters();
+      if (state.query) { state.page = 1; doSearch(); }
+    });
+  });
+
+  ['home-safe','header-safe'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', e => {
+      state.safe = e.target.value;
+      syncFilters();
+      if (state.query) { state.page = 1; doSearch(); }
+    });
+  });
+
+  function loadFromUrl() {
+    const p = new URLSearchParams(location.search);
+    const q = p.get('q');
+    const cat = p.get('cat') || 'general';
+    const page = parseInt(p.get('p')) || 1;
+    state.time = p.get('time') || '';
+    state.safe = p.get('safe') || '0';
+    if (q) {
+      state.query = q;
+      state.category = cat;
+      state.page = page;
+      syncCats();
+      syncFilters();
+      doSearch();
+    }
+  }
+
+  loadFromUrl();
+  window.addEventListener('popstate', loadFromUrl);
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
+  <ShortName>Fathom</ShortName>
+  <Description>search the depths</Description>
+  <InputEncoding>UTF-8</InputEncoding>
+  <Image width="16" height="16" type="image/png">https://search.boogaardmusic.com/assets/favicon.png</Image>
+  <Url type="text/html" method="get" template="https://search.boogaardmusic.com/?q={searchTerms}&amp;cat=general"/>
+  <Url type="application/x-suggestions+json" method="get" template="https://search.boogaardmusic.com/searxng/autocomplete?q={searchTerms}&amp;format=json"/>
+</OpenSearchDescription>
