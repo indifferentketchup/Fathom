@@ -1,0 +1,2767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fathom — search the depths</title>
+  <meta name="description" content="A meta-search engine for the open web. No AI summaries, no trackers, no noise.">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  <link rel="apple-touch-icon" href="/assets/favicon.png">
+  <link rel="search" type="application/opensearchdescription+xml" title="Fathom" href="/opensearch.xml">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#03060b">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Fathom">
+  <meta property="og:description" content="search the depths">
+  <meta property="og:image" content="/assets/og-banner.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Geist:wght@300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"></script>
+  <style>
+    :root {
+      --ink-0:#03060b;--ink-1:#070c16;--ink-2:#0b1220;--ink-3:#111a2c;--ink-4:#1a2642;
+      --line:#15243a;--line-2:#223553;--line-3:#2d4366;
+      --fg:#e5edf2;--fg-2:#9eb0c0;--fg-3:#56697d;--fg-4:#334558;
+      --glow:#5dd5f0;--glow-2:#9de8f5;--glow-3:#2c7a8f;
+      --halo:rgba(93,213,240,0.12);--halo-2:rgba(93,213,240,0.04);
+      --coral:#ff8a7a;--kelp:#7ed6a7;--amber:#f5c77a;
+      --serif:'Fraunces','Iowan Old Style',Georgia,serif;
+      --sans:'Geist',ui-sans-serif,system-ui,-apple-system,sans-serif;
+      --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+      --r-sm:4px;--r-md:8px;--r-lg:14px;
+      --ease:cubic-bezier(0.22,1,0.36,1);--dur:0.35s;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:var(--ink-0);color:var(--fg);font-family:var(--sans);font-feature-settings:"ss01","cv01","cv11";-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    button,input,select,textarea{font:inherit;color:inherit}
+    button{cursor:pointer;background:none;border:0}
+    a{color:inherit;text-decoration:none}
+    ::selection{background:var(--glow);color:var(--ink-0)}
+    :focus-visible{outline:2px solid var(--glow);outline-offset:2px;border-radius:var(--r-sm)}
+    body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(93,213,240,0.04),transparent 60%),radial-gradient(ellipse 60% 40% at 80% 110%,rgba(93,213,240,0.025),transparent 50%),linear-gradient(180deg,var(--ink-0) 0%,#05080f 40%,#02040a 100%)}
+    body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='1200' viewBox='0 0 1200 1200'><g fill='none' stroke='%235dd5f0' stroke-width='0.4' opacity='0.07'><path d='M0,420 Q300,380 600,420 T1200,400'/><path d='M0,520 Q300,490 600,510 T1200,500'/><path d='M0,620 Q300,600 600,590 T1200,610'/><path d='M0,740 Q300,700 600,720 T1200,710'/><path d='M0,860 Q300,830 600,840 T1200,825'/><path d='M0,980 Q300,950 600,955 T1200,945'/></g></svg>");background-size:120% 120%;background-position:center;opacity:0.6;mix-blend-mode:screen}
+    @media(prefers-reduced-motion:no-preference){body::after{animation:drift 60s linear infinite}}
+    @keyframes drift{0%{background-position:0% 0%}100%{background-position:100% 100%}}
+    #app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column}
+    .readout{position:fixed;font-family:var(--mono);font-size:0.65rem;letter-spacing:0.12em;color:var(--fg-4);text-transform:uppercase;pointer-events:none;z-index:2;user-select:none}
+    .readout .dot{color:var(--glow-3);margin:0 0.4em}
+    .readout .pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--glow);margin-right:0.4em;vertical-align:0.05em;box-shadow:0 0 8px var(--glow)}
+    @media(prefers-reduced-motion:no-preference){.readout .pulse{animation:heartbeat 2.4s ease-in-out infinite}}
+    @keyframes heartbeat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.35;transform:scale(0.8)}}
+    .readout-tl{top:1rem;left:1.25rem}.readout-tr{top:1rem;right:1.25rem}
+    .readout-bl{bottom:1rem;left:1.25rem}.readout-br{bottom:1rem;right:1.25rem;pointer-events:auto}
+    .readout-br button{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--fg-4);padding:0.2rem 0.5rem;border:1px solid var(--line);border-radius:3px;transition:all var(--dur) var(--ease)}
+    .readout-br button:hover{color:var(--fg-2);border-color:var(--line-2)}
+    @media(max-width:720px){.readout-bl,.readout-tr{display:none}}
+    #home{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 1.5rem;gap:2rem}
+    .brand{display:flex;flex-direction:column;align-items:center;gap:0.25rem;animation:rise 0.7s var(--ease) both}
+    .brand-mark{width:clamp(240px,32vw,360px);height:auto;max-width:82vw;display:block;filter:drop-shadow(0 0 24px rgba(93,213,240,0.25)) drop-shadow(0 0 1px rgba(93,213,240,0.4))}
+    .brand-tag{font-family:var(--mono);font-size:0.72rem;color:var(--fg-3);letter-spacing:0.32em;text-transform:uppercase;margin-top:0.5rem}
+    .brand-tag::before,.brand-tag::after{content:'─';color:var(--line-2);margin:0 0.75em}
+    .search{width:100%;max-width:660px;position:relative;animation:rise 0.7s 0.1s var(--ease) both}
+    .search-box{display:flex;align-items:stretch;background:rgba(11,18,32,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line-2);border-radius:999px;overflow:hidden;transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease),background var(--dur) var(--ease)}
+    .search-box:focus-within{border-color:var(--glow);box-shadow:0 0 0 4px var(--halo),0 10px 40px -10px rgba(93,213,240,0.25);background:rgba(11,18,32,0.85)}
+    .search-icon{display:grid;place-items:center;padding-left:1.25rem;color:var(--fg-3);transition:color var(--dur) var(--ease)}
+    .search-box:focus-within .search-icon{color:var(--glow)}
+    .search-icon svg{width:18px;height:18px}
+    .search-input{flex:1;background:transparent;border:none;outline:none;padding:1.1rem 1rem;font-family:var(--sans);font-size:1.075rem;font-weight:400;color:var(--fg);caret-color:var(--glow);letter-spacing:-0.005em}
+    .search-input::placeholder{color:var(--fg-4)}
+    .search-submit{align-self:center;margin-right:0.4rem;padding:0.55rem 1.1rem;border-radius:999px;font-family:var(--mono);font-size:0.7rem;font-weight:500;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-0);background:linear-gradient(180deg,var(--glow-2),var(--glow));box-shadow:0 0 0 1px rgba(0,0,0,0.15) inset,0 2px 12px -2px var(--halo);transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
+    .search-submit:hover{transform:translateY(-1px);box-shadow:0 0 0 1px rgba(0,0,0,0.15) inset,0 6px 18px -2px var(--halo)}
+    .search-submit:active{transform:translateY(0)}
+    .bang-chip{position:absolute;top:50%;left:3.1rem;transform:translateY(-50%);font-family:var(--mono);font-size:0.7rem;padding:0.2rem 0.55rem;background:var(--halo);color:var(--glow);border:1px solid var(--glow-3);border-radius:999px;pointer-events:none;white-space:nowrap;opacity:0;transition:opacity var(--dur) var(--ease)}
+    .bang-chip.visible{opacity:1}
+    .suggest{position:absolute;left:0;right:0;top:calc(100% + 8px);background:rgba(11,18,32,0.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line-2);border-radius:var(--r-lg);box-shadow:0 24px 60px -20px rgba(0,0,0,0.8),0 0 0 1px rgba(93,213,240,0.05);overflow:hidden;z-index:10;display:none;max-height:60vh;overflow-y:auto}
+    .suggest.visible{display:block}
+    .suggest-group + .suggest-group{border-top:1px solid var(--line)}
+    .suggest-label{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-4);padding:0.6rem 1rem 0.3rem}
+    .suggest-item{display:flex;align-items:center;gap:0.75rem;padding:0.7rem 1rem;font-size:0.95rem;color:var(--fg-2);cursor:pointer;transition:background var(--dur) var(--ease),color var(--dur) var(--ease)}
+    .suggest-item:hover,.suggest-item.active{background:var(--halo-2);color:var(--fg)}
+    .suggest-item svg{width:14px;height:14px;color:var(--fg-4);flex-shrink:0}
+    .suggest-item .sug-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .suggest-item mark{background:transparent;color:var(--glow);font-weight:500}
+    .tabs{display:flex;gap:0.15rem;flex-wrap:wrap;justify-content:center;animation:rise 0.7s 0.2s var(--ease) both}
+    .tab{display:inline-flex;align-items:center;gap:0.5rem;padding:0.55rem 0.95rem;border-radius:999px;font-size:0.82rem;font-weight:500;color:var(--fg-3);transition:all var(--dur) var(--ease);border:1px solid transparent}
+    .tab:hover{color:var(--fg);background:var(--halo-2)}
+    .tab[aria-selected="true"]{color:var(--glow);background:var(--halo);border-color:var(--glow-3)}
+    .tab svg{width:14px;height:14px}
+    .home-foot{display:flex;flex-direction:column;align-items:center;gap:1rem;animation:rise 0.7s 0.3s var(--ease) both;max-width:660px;width:100%}
+    .recent-row{display:flex;flex-wrap:wrap;gap:0.4rem;justify-content:center}
+    .recent-label{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-4);margin-right:0.25rem;align-self:center}
+    .recent-chip{font-size:0.8rem;color:var(--fg-2);padding:0.3rem 0.7rem;border-radius:999px;border:1px solid var(--line);transition:all var(--dur) var(--ease);display:inline-flex;align-items:center;gap:0.35rem}
+    .recent-chip:hover{color:var(--glow);border-color:var(--glow-3)}
+    .recent-chip svg{width:10px;height:10px;opacity:0.6}
+    #results{display:none;flex:1;flex-direction:column}
+    #results.visible{display:flex}
+    .r-header{position:sticky;top:0;z-index:5;background:rgba(3,6,11,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+    .r-header-top{display:flex;align-items:center;gap:1rem;padding:0.85rem 1.5rem;max-width:1600px;margin:0 auto}
+    .r-logo{display:flex;align-items:baseline;gap:0.1rem;flex-shrink:0}
+    .r-logo-mark{display:block;height:30px;width:auto;filter:drop-shadow(0 0 6px rgba(93,213,240,0.35))}
+    .r-search-wrap{flex:1;max-width:720px;position:relative}
+    .r-search-box{display:flex;align-items:center;background:var(--ink-2);border:1px solid var(--line-2);border-radius:999px;overflow:hidden;transition:all var(--dur) var(--ease)}
+    .r-search-box:focus-within{border-color:var(--glow);box-shadow:0 0 0 3px var(--halo)}
+    .r-search-box .search-icon{padding-left:1rem}
+    .r-search-input{flex:1;background:transparent;border:none;outline:none;padding:0.65rem 0.85rem;font-family:var(--sans);font-size:0.98rem;color:var(--fg);caret-color:var(--glow)}
+    .r-search-input::placeholder{color:var(--fg-4)}
+    .r-search-submit{margin-right:0.3rem;padding:0.4rem 0.85rem;border-radius:999px;font-family:var(--mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;background:linear-gradient(180deg,var(--glow-2),var(--glow));color:var(--ink-0)}
+    .r-tools{display:flex;gap:0.3rem;align-items:center;flex-shrink:0}
+    .icon-btn{display:grid;place-items:center;width:34px;height:34px;border-radius:999px;color:var(--fg-3);transition:all var(--dur) var(--ease);border:1px solid transparent}
+    .icon-btn:hover{color:var(--fg);background:var(--halo-2);border-color:var(--line)}
+    .icon-btn svg{width:16px;height:16px}
+    .r-header-bot{display:flex;align-items:center;gap:0.5rem;padding:0 1.5rem 0.5rem;max-width:1600px;margin:0 auto;overflow-x:auto;scrollbar-width:none}
+    .r-header-bot::-webkit-scrollbar{display:none}
+    .r-tabs{display:flex;gap:0.1rem;padding-bottom:0.45rem}
+    .r-tab{display:inline-flex;align-items:center;gap:0.4rem;padding:0.45rem 0.85rem;font-size:0.8rem;color:var(--fg-3);transition:color var(--dur) var(--ease);position:relative;white-space:nowrap}
+    .r-tab:hover{color:var(--fg)}
+    .r-tab[aria-selected="true"]{color:var(--glow)}
+    .r-tab[aria-selected="true"]::after{content:'';position:absolute;left:0;right:0;bottom:-0.5rem;height:1.5px;background:var(--glow);box-shadow:0 0 8px var(--halo)}
+    .r-spacer{flex:1}
+    .r-filters{display:flex;gap:0.4rem;align-items:center;padding-bottom:0.45rem}
+    .r-filter{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.08em;text-transform:uppercase;padding:0.35rem 0.7rem;background:transparent;color:var(--fg-3);border:1px solid var(--line);border-radius:999px;appearance:none;-webkit-appearance:none;cursor:pointer;transition:all var(--dur) var(--ease);background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2356697d' stroke-width='2.5'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 0.55rem center;padding-right:1.6rem}
+    .r-filter:hover,.r-filter:focus{color:var(--fg);border-color:var(--line-3)}
+    .r-filter option{background:var(--ink-2);color:var(--fg)}
+    .r-body{flex:1;max-width:1600px;width:100%;margin:0 auto;padding:1.5rem 1.5rem 5rem;display:grid;grid-template-columns:minmax(0,1fr);gap:2rem}
+    .r-body.has-side{grid-template-columns:minmax(0,1fr) minmax(260px,340px)}
+    @media(max-width:960px){.r-body.has-side{grid-template-columns:minmax(0,1fr)}}
+    .r-main{min-width:0;max-width:720px}
+    .r-main.wide{max-width:none}
+    .r-meta{display:flex;align-items:center;gap:1rem;font-family:var(--mono);font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-3);margin-bottom:1.5rem;flex-wrap:wrap}
+    .r-meta .sep{color:var(--line-3)}
+    .r-meta .depth{display:inline-flex;align-items:center;gap:0.5rem}
+    .depth-bar{width:80px;height:2px;background:var(--line);position:relative;overflow:hidden}
+    .depth-fill{position:absolute;top:0;left:0;bottom:0;background:linear-gradient(90deg,var(--glow-3),var(--glow));transition:width 0.6s var(--ease)}
+    .answer-card{margin-bottom:1.5rem;padding:1.25rem 1.4rem;border:1px solid var(--glow-3);border-radius:var(--r-md);background:linear-gradient(135deg,var(--halo-2),transparent 60%),var(--ink-1);animation:rise 0.4s var(--ease) both}
+    .answer-label{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--glow);margin-bottom:0.5rem}
+    .answer-value{font-family:var(--serif);font-size:1.6rem;font-weight:400;color:var(--fg);line-height:1.3;word-break:break-word}
+    .correction{margin-bottom:1rem;font-size:0.95rem;color:var(--fg-2)}
+    .correction strong{font-family:var(--serif);font-style:italic;font-weight:400;font-size:1.1rem;color:var(--glow);cursor:pointer;border-bottom:1px dashed var(--glow-3);margin-left:0.3rem}
+    .web-result{padding:1.1rem 0;border-bottom:1px solid var(--line);animation:rise 0.3s var(--ease) both}
+    .web-result:last-child{border-bottom:none}
+    .wr-head{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.35rem;min-width:0}
+    .wr-favicon{width:26px;height:26px;border-radius:999px;background:var(--ink-2);border:1px solid var(--line);display:grid;place-items:center;flex-shrink:0;overflow:hidden}
+    .wr-favicon img{width:16px;height:16px}
+    .wr-favicon .wr-fav-fallback{font-family:var(--mono);font-size:0.7rem;color:var(--fg-3);text-transform:uppercase}
+    .wr-url{min-width:0;flex:1;font-family:var(--mono);font-size:0.72rem;color:var(--fg-3);letter-spacing:0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:0.25rem}
+    .wr-url .wr-host{color:var(--fg-2)}
+    .wr-url .wr-sep{color:var(--fg-4);margin:0 0.15rem}
+    .wr-title{font-family:var(--serif);font-variation-settings:"opsz" 48;font-size:1.3rem;font-weight:400;color:var(--glow-2);line-height:1.25;letter-spacing:-0.015em;display:inline;transition:color var(--dur) var(--ease)}
+    .wr-title-link:hover .wr-title{color:var(--glow);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+    .wr-title-link:visited .wr-title{color:#b8a6d6}
+    .wr-snippet{margin-top:0.35rem;font-size:0.92rem;color:var(--fg-2);line-height:1.55}
+    .wr-snippet mark{background:transparent;color:var(--fg);font-weight:500}
+    .wr-foot{margin-top:0.55rem;display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap}
+    .wr-engines{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;color:var(--fg-4);text-transform:uppercase}
+    .wr-action{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-4);padding:0.15rem 0.5rem;border:1px solid var(--line);border-radius:999px;transition:all var(--dur) var(--ease)}
+    .wr-action:hover{color:var(--glow);border-color:var(--glow-3)}
+    .r-side{display:flex;flex-direction:column;gap:1rem}
+    .infobox{border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--ink-1);overflow:hidden;animation:rise 0.4s 0.1s var(--ease) both}
+    .infobox-img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:var(--ink-2)}
+    .infobox-body{padding:1.1rem 1.2rem}
+    .infobox-title{font-family:var(--serif);font-size:1.35rem;font-weight:400;color:var(--fg);line-height:1.2;margin-bottom:0.5rem}
+    .infobox-source{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--fg-4);margin-bottom:0.75rem}
+    .infobox-content{font-size:0.9rem;color:var(--fg-2);line-height:1.55;margin-bottom:0.85rem}
+    .infobox-attrs{border-top:1px solid var(--line);padding-top:0.75rem;display:grid;gap:0.4rem}
+    .infobox-attr{display:grid;grid-template-columns:5.5rem 1fr;gap:0.75rem;font-size:0.85rem}
+    .infobox-attr dt{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;color:var(--fg-4);text-transform:uppercase;align-self:center}
+    .infobox-attr dd{color:var(--fg-2);word-break:break-word}
+    .infobox-links{display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.85rem}
+    .infobox-link{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.08em;color:var(--fg-2);padding:0.25rem 0.6rem;border:1px solid var(--line);border-radius:999px;transition:all var(--dur) var(--ease)}
+    .infobox-link:hover{color:var(--glow);border-color:var(--glow-3)}
+    .img-grid{column-count:4;column-gap:0.5rem}
+    @media(max-width:1200px){.img-grid{column-count:3}}
+    @media(max-width:780px){.img-grid{column-count:2}}
+    @media(max-width:460px){.img-grid{column-count:1}}
+    .img-tile{break-inside:avoid;margin-bottom:0.5rem;position:relative;border-radius:var(--r-sm);overflow:hidden;background:var(--ink-2);cursor:zoom-in;transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
+    .img-tile:hover{transform:translateY(-2px);box-shadow:0 8px 24px -8px rgba(0,0,0,0.6),0 0 0 1px var(--glow-3)}
+    .img-tile img{width:100%;height:auto;display:block;transition:opacity var(--dur) var(--ease)}
+    .img-tile.loading img{opacity:0}
+    .img-tile .img-meta{position:absolute;left:0;right:0;bottom:0;padding:1.5rem 0.7rem 0.55rem;background:linear-gradient(transparent,rgba(3,6,11,0.95));font-family:var(--mono);font-size:0.6rem;letter-spacing:0.08em;color:var(--fg-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity var(--dur) var(--ease)}
+    .img-tile:hover .img-meta{opacity:1}
+    .lightbox{position:fixed;inset:0;background:rgba(3,6,11,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:100;display:none;flex-direction:column;animation:fade 0.2s var(--ease) both}
+    .lightbox.visible{display:flex}
+    .lb-top{display:flex;justify-content:space-between;padding:1.2rem 1.5rem;gap:1rem;align-items:flex-start}
+    .lb-info{flex:1;min-width:0}
+    .lb-title{font-family:var(--serif);font-size:1.15rem;color:var(--fg);line-height:1.3;margin-bottom:0.3rem}
+    .lb-source{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.1em;color:var(--fg-3);word-break:break-all}
+    .lb-actions{display:flex;gap:0.35rem;flex-shrink:0}
+    .lb-stage{flex:1;display:grid;place-items:center;padding:0 4rem 1rem;position:relative;min-height:0}
+    .lb-stage img{max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r-sm);box-shadow:0 20px 60px -20px rgba(0,0,0,0.8)}
+    .lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:999px;background:var(--ink-2);border:1px solid var(--line-2);display:grid;place-items:center;color:var(--fg-2);transition:all var(--dur) var(--ease)}
+    .lb-nav:hover{color:var(--glow);border-color:var(--glow-3)}
+    .lb-nav svg{width:18px;height:18px}
+    .lb-prev{left:1rem}.lb-next{right:1rem}
+    .lb-foot{display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1.5rem 1rem;font-family:var(--mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-4)}
+    .news-row{padding:1.1rem 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr minmax(120px,160px);gap:1.25rem;animation:rise 0.3s var(--ease) both}
+    .news-row:last-child{border-bottom:none}
+    .news-body{min-width:0}
+    .news-kicker{display:flex;align-items:center;gap:0.5rem;font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:0.4rem}
+    .news-kicker .dot{color:var(--line-3)}
+    .news-kicker .date{color:var(--fg-4)}
+    .news-title-link .news-title{font-family:var(--serif);font-size:1.15rem;font-weight:400;color:var(--glow-2);line-height:1.3;display:inline;letter-spacing:-0.01em;transition:color var(--dur) var(--ease)}
+    .news-title-link:hover .news-title{color:var(--glow)}
+    .news-snippet{margin-top:0.4rem;font-size:0.9rem;color:var(--fg-2);line-height:1.55}
+    .news-thumb{aspect-ratio:4/3;border-radius:var(--r-sm);overflow:hidden;background:var(--ink-2);border:1px solid var(--line)}
+    .news-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .news-thumb.empty{display:none}
+    @media(max-width:600px){.news-row{grid-template-columns:1fr}.news-thumb{order:-1;aspect-ratio:16/9;max-height:200px}}
+    .video-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+    .video-card{animation:rise 0.3s var(--ease) both;display:flex;flex-direction:column;gap:0.5rem}
+    .video-thumb{aspect-ratio:16/9;border-radius:var(--r-sm);overflow:hidden;background:var(--ink-2);border:1px solid var(--line);position:relative;display:block}
+    .video-thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 3s ease-out}
+    .video-thumb:hover img{transform:scale(1.03)}
+    .video-play{position:absolute;inset:0;display:grid;place-items:center;transition:background var(--dur) var(--ease)}
+    .video-thumb:hover .video-play{background:rgba(3,6,11,0.35)}
+    .video-play::after{content:'';width:48px;height:48px;border-radius:999px;background:rgba(3,6,11,0.72);border:1px solid var(--glow-3);backdrop-filter:blur(6px);opacity:0;transition:opacity var(--dur) var(--ease)}
+    .video-play::before{content:'';width:0;height:0;border-left:12px solid var(--glow);border-top:8px solid transparent;border-bottom:8px solid transparent;position:absolute;opacity:0;transition:opacity var(--dur) var(--ease);margin-left:3px}
+    .video-thumb:hover .video-play::after,.video-thumb:hover .video-play::before{opacity:1}
+    .video-duration{position:absolute;right:0.4rem;bottom:0.4rem;font-family:var(--mono);font-size:0.65rem;padding:0.1rem 0.35rem;background:rgba(3,6,11,0.85);color:var(--fg);border-radius:3px;border:1px solid var(--line)}
+    .video-title{font-family:var(--serif);font-size:1rem;color:var(--glow-2);line-height:1.3;font-weight:400;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .video-meta{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-3);display:flex;gap:0.5rem}
+    .video-meta .dot{color:var(--line-3)}
+    .map-view{display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:1rem;height:calc(100vh - 170px);min-height:520px}
+    @media(max-width:860px){.map-view{grid-template-columns:1fr;height:auto}.map-list{max-height:320px}#map-canvas{height:480px}}
+    .map-list{overflow-y:auto;border:1px solid var(--line);border-radius:var(--r-md);background:var(--ink-1)}
+    .map-item{padding:0.9rem 1rem;border-bottom:1px solid var(--line);cursor:pointer;transition:background var(--dur) var(--ease)}
+    .map-item:last-child{border-bottom:none}
+    .map-item:hover,.map-item.active{background:var(--halo-2)}
+    .map-item-title{font-family:var(--serif);font-size:1rem;color:var(--glow-2);line-height:1.25;margin-bottom:0.25rem}
+    .map-item-addr{font-size:0.8rem;color:var(--fg-3);line-height:1.4}
+    .map-item-sub{font-size:0.72rem;color:var(--fg-3);text-transform:capitalize;margin-bottom:0.2rem}
+    .map-item-addr{font-size:0.8rem;color:var(--fg-3);line-height:1.4;margin-bottom:0.25rem}
+    .map-item-foot{display:flex;align-items:center;gap:0.7rem;margin-top:0.35rem;flex-wrap:wrap}
+    .map-item-dist{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.06em;color:var(--glow);padding:0.1rem 0.45rem;border:1px solid var(--glow-3);border-radius:999px;background:var(--halo)}
+    .map-item-coord{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.06em;color:var(--fg-4)}
+    .map-item-dir{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-2);border-bottom:1px dashed var(--fg-4);padding-bottom:1px;transition:all var(--dur) var(--ease)}
+    .map-item-dir:hover{color:var(--glow);border-bottom-color:var(--glow-3)}
+    .map-more{display:flex;flex-direction:column;gap:0.45rem;padding:1rem;border-top:1px solid var(--line);background:var(--ink-1)}
+    .map-more-btn{font-family:var(--mono);font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.55rem 0.85rem;background:transparent;color:var(--fg-2);border:1px solid var(--line-2);border-radius:999px;cursor:pointer;transition:all var(--dur) var(--ease);display:flex;align-items:center;justify-content:center;gap:0.35rem}
+    .map-more-btn:hover{color:var(--glow);border-color:var(--glow-3);background:var(--halo-2)}
+    .map-more-btn-alt{border-style:dashed;color:var(--fg-3)}
+    .map-more-count{color:var(--fg-4);text-transform:none;letter-spacing:0.05em;font-size:0.62rem}
+    .map-more-info{font-family:var(--mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-4);text-align:center;padding:0.25rem 0}
+    #map-canvas{border:1px solid var(--line);border-radius:var(--r-md);background:#0b1220;overflow:hidden;min-height:480px;width:100%;height:100%}
+    .leaflet-container{background:#0b1220 !important;font-family:var(--sans) !important}
+    .leaflet-popup-content-wrapper{background:var(--ink-1) !important;color:var(--fg) !important;border:1px solid var(--line-2) !important;border-radius:var(--r-md) !important;box-shadow:0 12px 40px -10px rgba(0,0,0,0.7) !important}
+    .leaflet-popup-tip{background:var(--ink-1) !important;box-shadow:none !important}
+    .leaflet-popup-content{margin:0.75rem 1rem !important;line-height:1.4 !important}
+    .leaflet-popup-close-button{color:var(--fg-3) !important}
+    .leaflet-popup-close-button:hover{color:var(--glow) !important;background:transparent !important}
+    .leaflet-control-attribution{background:rgba(3,6,11,0.75) !important;color:var(--fg-3) !important;font-size:10px !important;padding:2px 6px !important}
+    .leaflet-control-attribution a{color:var(--fg-2) !important}
+    .leaflet-control-zoom a{background:var(--ink-2) !important;color:var(--fg) !important;border-color:var(--line-2) !important}
+    .leaflet-control-zoom a:hover{background:var(--ink-3) !important;color:var(--glow) !important}
+    .fathom-pin{background:none !important;border:none !important;transition:transform 0.2s var(--ease)}
+    .fathom-pin-hover{transform:translateY(-4px) scale(1.12)}
+    .fathom-you{background:none !important;border:none !important;position:relative;width:20px;height:20px;pointer-events:none}
+    .fathom-you-dot{position:absolute;top:50%;left:50%;width:10px;height:10px;border-radius:50%;background:#5dd5f0;transform:translate(-50%,-50%);box-shadow:0 0 0 2px #03060b,0 0 8px rgba(93,213,240,0.55);z-index:2}
+    .fathom-you-pulse{position:absolute;top:50%;left:50%;width:20px;height:20px;border-radius:50%;background:rgba(93,213,240,0.35);transform:translate(-50%,-50%) scale(1);z-index:1;animation:fathomPulse 2.2s ease-out infinite}
+    @keyframes fathomPulse{0%{transform:translate(-50%,-50%) scale(0.4);opacity:0.7}100%{transform:translate(-50%,-50%) scale(2.2);opacity:0}}
+    .related{margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid var(--line)}
+    .related-label{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-4);margin-bottom:0.75rem}
+    .related-grid{display:flex;flex-wrap:wrap;gap:0.4rem}
+    .related-item{font-size:0.88rem;color:var(--fg-2);padding:0.4rem 0.9rem;border:1px solid var(--line);border-radius:999px;display:inline-flex;align-items:center;gap:0.4rem;transition:all var(--dur) var(--ease)}
+    .related-item:hover{color:var(--glow);border-color:var(--glow-3);background:var(--halo-2)}
+    .related-item svg{width:10px;height:10px;opacity:0.6}
+    .pagination{display:flex;gap:0.3rem;margin-top:2.5rem;align-items:center;flex-wrap:wrap}
+    .page-btn{font-family:var(--mono);font-size:0.7rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.5rem 0.9rem;border:1px solid var(--line);color:var(--fg-2);border-radius:999px;transition:all var(--dur) var(--ease)}
+    .page-btn:hover{border-color:var(--glow-3);color:var(--glow)}
+    .page-btn[aria-current="page"]{border-color:var(--glow);color:var(--glow);background:var(--halo-2)}
+    .page-btn:disabled{opacity:0.35;cursor:default}
+    .loading{display:flex;align-items:center;gap:1rem;padding:2.5rem 0;font-family:var(--mono);font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-3)}
+    .sonar{position:relative;width:28px;height:28px;flex-shrink:0}
+    .sonar::before,.sonar::after,.sonar span{content:'';position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--glow);opacity:0}
+    @media(prefers-reduced-motion:no-preference){.sonar::before{animation:ping 1.8s ease-out infinite}.sonar::after{animation:ping 1.8s 0.6s ease-out infinite}.sonar span{animation:ping 1.8s 1.2s ease-out infinite}}
+    @keyframes ping{0%{transform:scale(0.3);opacity:0.8}100%{transform:scale(1.5);opacity:0}}
+    .empty,.error{padding:3rem 0;text-align:center}
+    .empty-icon{display:inline-grid;place-items:center;width:60px;height:60px;border-radius:999px;background:var(--halo-2);border:1px solid var(--line-2);color:var(--glow-3);margin-bottom:1rem}
+    .empty-title{font-family:var(--serif);font-size:1.4rem;font-weight:400;color:var(--fg);margin-bottom:0.35rem}
+    .empty-sub{font-family:var(--mono);font-size:0.72rem;letter-spacing:0.14em;color:var(--fg-3);text-transform:uppercase}
+    .error .empty-title{color:var(--coral)}
+    .help-overlay{position:fixed;inset:0;background:rgba(3,6,11,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:50;display:none;place-items:center;padding:2rem;animation:fade 0.2s var(--ease)}
+    .help-overlay.visible{display:grid}
+    .help-panel{background:var(--ink-1);border:1px solid var(--line-2);border-radius:var(--r-lg);padding:2rem 2.25rem;max-width:540px;width:100%;box-shadow:0 30px 80px -20px rgba(0,0,0,0.8)}
+    .help-title{font-family:var(--serif);font-size:1.5rem;font-weight:400;color:var(--fg);margin-bottom:1.25rem}
+    .help-title em{color:var(--glow);font-style:italic}
+    .help-grid{display:grid;grid-template-columns:auto 1fr;gap:0.9rem 1.4rem;font-size:0.9rem}
+    .help-grid kbd{font-family:var(--mono);font-size:0.7rem;font-weight:500;padding:0.25rem 0.5rem;background:var(--ink-2);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:4px;color:var(--fg);min-width:32px;display:inline-block;text-align:center}
+    .help-grid kbd + kbd{margin-left:0.25rem}
+    .help-grid span{color:var(--fg-2);align-self:center}
+    .help-foot{margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--line);font-family:var(--mono);font-size:0.62rem;letter-spacing:0.14em;color:var(--fg-4);text-transform:uppercase;text-align:center}
+    .help-foot .dot{color:var(--line-3);margin:0 0.25em}
+    .toast{position:fixed;left:50%;bottom:2rem;transform:translate(-50%,120%);background:var(--ink-2);border:1px solid var(--line-2);color:var(--fg);font-family:var(--mono);font-size:0.72rem;letter-spacing:0.08em;padding:0.65rem 1rem;border-radius:999px;z-index:200;transition:transform 0.4s var(--ease);box-shadow:0 10px 40px -10px rgba(0,0,0,0.6)}
+    .toast.visible{transform:translate(-50%,0)}
+    @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fade{from{opacity:0}to{opacity:1}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.001s !important;animation-delay:0s !important;transition-duration:0.001s !important}}
+    ::-webkit-scrollbar{width:10px;height:10px}
+    ::-webkit-scrollbar-track{background:var(--ink-0)}
+    ::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;border:2px solid var(--ink-0)}
+    ::-webkit-scrollbar-thumb:hover{background:var(--line-3)}
+    @media(max-width:640px){#home{padding:3rem 1rem;gap:1.5rem}.r-header-top{padding:0.6rem 0.9rem;gap:0.5rem}.r-logo-mark{height:24px}.r-filters{padding-bottom:0.5rem}.r-body{padding:1rem 0.9rem 3rem;gap:1.25rem}.r-main{max-width:none}.readout-br button{font-size:0.55rem;padding:0.15rem 0.4rem}}
+    /* === Entity Cards (Phase 2b.1) === */
+    #entity-card-mount{max-width:1600px;width:100%;margin:0 auto;padding:1.5rem 1.5rem 0}
+    #entity-card-mount:empty{padding:0}
+    .entity-card{max-width:720px;background:var(--ink-1);border:1px solid var(--line-2);border-radius:var(--r-md);padding:1.1rem 1.3rem;animation:rise 0.4s var(--ease) both;position:relative}
+    .entity-card::before{content:'';position:absolute;left:0;top:1.1rem;bottom:1.1rem;width:2px;border-radius:0 2px 2px 0;background:linear-gradient(180deg,var(--glow-2),var(--glow-3));opacity:0.7}
+    .entity-card-label{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.22em;text-transform:uppercase;color:var(--fg-3);margin-bottom:0.45rem}
+    .entity-card-primary{font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--fg);line-height:1.15;letter-spacing:-0.015em;word-break:break-word}
+    .entity-card-unit{font-family:var(--sans);font-size:1.15rem;font-weight:400;color:var(--fg-2);margin-left:0.35rem;letter-spacing:0}
+    .entity-card-sub{font-family:var(--mono);font-size:0.7rem;color:var(--fg-3);margin-top:0.55rem;letter-spacing:0.04em;word-break:break-word}
+    .entity-card-actions{display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.85rem}
+    .entity-card-btn{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-3);padding:0.3rem 0.7rem;border:1px solid var(--line-2);border-radius:999px;background:transparent;cursor:pointer;transition:all var(--dur) var(--ease)}
+    .entity-card-btn:hover{color:var(--glow);border-color:var(--glow-3);background:var(--halo-2)}
+    .entity-card-close{position:absolute;top:0.5rem;right:0.6rem;width:24px;height:24px;border-radius:50%;background:transparent;border:1px solid transparent;color:var(--fg-4);font-size:1.05rem;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0;transition:all var(--dur) var(--ease);font-family:var(--sans)}
+    .entity-card-close:hover{color:var(--coral);border-color:var(--line-2);background:rgba(255,138,122,0.08)}
+    .entity-card-attr{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-4);margin-top:0.85rem;padding-top:0.65rem;border-top:1px solid var(--line)}
+    .entity-card-attr a{color:var(--fg-3);border-bottom:1px dashed var(--line-2)}
+    .entity-card-attr a:hover{color:var(--glow);border-bottom-color:var(--glow-3)}
+    /* dictionary */
+    .dict-head{display:flex;align-items:baseline;gap:0.7rem;flex-wrap:wrap;margin-bottom:0.85rem}
+    .dict-word{font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--fg);line-height:1;letter-spacing:-0.02em}
+    .dict-phon{font-family:var(--mono);font-size:0.8rem;color:var(--fg-3);letter-spacing:0.02em}
+    .dict-audio{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1px solid var(--line-2);background:transparent;color:var(--fg-2);font-size:0.65rem;cursor:pointer;transition:all var(--dur) var(--ease);line-height:1}
+    .dict-audio:hover{color:var(--glow);border-color:var(--glow-3);background:var(--halo-2)}
+    .dict-meaning{margin-bottom:0.9rem}
+    .dict-meaning:last-of-type{margin-bottom:0.5rem}
+    .dict-pos{font-family:var(--serif);font-style:italic;font-size:0.85rem;color:var(--fg-3);margin-bottom:0.35rem}
+    .dict-def{padding-left:0.85rem;border-left:2px solid var(--line-2);margin-bottom:0.5rem}
+    .dict-def-text{font-size:0.95rem;color:var(--fg);line-height:1.5}
+    .dict-def-ex{font-family:var(--serif);font-style:italic;font-size:0.88rem;color:var(--fg-3);margin-top:0.25rem}
+    .dict-row{display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;margin-top:0.55rem}
+    .dict-row-label{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-4)}
+    .dict-chips{display:flex;flex-wrap:wrap;gap:0.3rem}
+    .dict-chip{font-size:0.78rem;color:var(--fg-2);padding:0.2rem 0.6rem;border:1px solid var(--line);border-radius:999px;background:transparent;cursor:pointer;transition:all var(--dur) var(--ease)}
+    .dict-chip:hover{color:var(--glow);border-color:var(--glow-3);background:var(--halo-2)}
+    /* weather */
+    .weather-loading{display:flex;align-items:center;gap:0.7rem;color:var(--fg-3);font-family:var(--mono);font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase}
+    .weather-error{font-family:var(--mono);font-size:0.72rem;color:var(--coral);letter-spacing:0.08em;text-transform:uppercase}
+    .weather-manual{display:flex;flex-direction:column;gap:0.6rem}
+    .weather-manual-text{font-size:0.9rem;color:var(--fg-2)}
+    .weather-manual-form{display:flex;gap:0.4rem}
+    .weather-manual-input{flex:1;background:var(--ink-2);border:1px solid var(--line-2);border-radius:999px;padding:0.45rem 0.9rem;color:var(--fg);font-size:0.9rem;outline:none;transition:all var(--dur) var(--ease);font-family:var(--sans)}
+    .weather-manual-input:focus{border-color:var(--glow);box-shadow:0 0 0 3px var(--halo)}
+    .wx-head{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.65rem}
+    .wx-loc{font-family:var(--serif);font-size:1.25rem;color:var(--fg);line-height:1.2}
+    .wx-unit{font-family:var(--mono);font-size:0.72rem;padding:0.25rem 0.6rem;border:1px solid var(--line-2);border-radius:999px;color:var(--fg-2);background:transparent;cursor:pointer;transition:all var(--dur) var(--ease)}
+    .wx-unit:hover{color:var(--glow);border-color:var(--glow-3);background:var(--halo-2)}
+    .wx-now{display:flex;align-items:center;gap:0.9rem;padding-bottom:0.85rem;border-bottom:1px solid var(--line);margin-bottom:0.85rem}
+    .wx-now-icon{font-size:2.4rem;line-height:1}
+    .wx-now-temp{font-family:var(--serif);font-size:2.6rem;font-weight:400;color:var(--fg);line-height:1;letter-spacing:-0.02em}
+    .wx-now-meta{display:flex;flex-direction:column;gap:0.2rem;min-width:0}
+    .wx-now-label{font-size:0.95rem;color:var(--fg-2)}
+    .wx-now-sub{font-family:var(--mono);font-size:0.65rem;color:var(--fg-3);letter-spacing:0.06em;text-transform:uppercase}
+    .wx-forecast{display:grid;grid-template-columns:repeat(5,1fr);gap:0.4rem}
+    .wx-day{display:flex;flex-direction:column;align-items:center;gap:0.25rem;padding:0.55rem 0.3rem;background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r-sm)}
+    .wx-day-name{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-3)}
+    .wx-day-icon{font-size:1.4rem;line-height:1}
+    .wx-day-range{display:flex;gap:0.35rem;font-family:var(--mono);font-size:0.75rem}
+    .wx-hi{color:var(--fg);font-weight:500}
+    .wx-lo{color:var(--fg-4)}
+    .wx-pop{font-family:var(--mono);font-size:0.6rem;color:var(--glow);letter-spacing:0.06em}
+    /* knowledge */
+    .kp-layout{display:grid;grid-template-columns:140px 1fr;gap:1rem;align-items:start}
+    .kp-thumb{border-radius:var(--r-sm);overflow:hidden;background:var(--ink-2);aspect-ratio:1/1;border:1px solid var(--line)}
+    .kp-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .kp-title{font-family:var(--serif);font-size:1.25rem;font-weight:400;line-height:1.2;margin-bottom:0.35rem}
+    .kp-title a{color:var(--glow-2)}
+    .kp-title a:hover{color:var(--glow);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+    .kp-desc{font-family:var(--serif);font-style:italic;font-size:0.88rem;color:var(--fg-2);margin-bottom:0.5rem}
+    .kp-extract{font-size:0.92rem;color:var(--fg-2);line-height:1.55}
+    /* place */
+    .pl-name{font-family:var(--serif);font-size:1.45rem;font-weight:400;color:var(--fg);line-height:1.2;letter-spacing:-0.015em;margin-bottom:0.35rem}
+    .pl-addr{font-size:0.85rem;color:var(--fg-2);margin-bottom:0.65rem;line-height:1.4}
+    .pl-actions{display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.7rem}
+    .pl-hours{margin:0.35rem 0 0.6rem}
+    .pl-hours > summary{cursor:pointer;font-family:var(--mono);font-size:0.7rem;letter-spacing:0.06em;color:var(--fg-2);list-style:none;padding:0.35rem 0}
+    .pl-hours > summary::-webkit-details-marker{display:none}
+    .pl-hours > summary::before{content:'▸';display:inline-block;margin-right:0.4rem;transition:transform var(--dur) var(--ease);color:var(--fg-4)}
+    .pl-hours[open] > summary::before{transform:rotate(90deg)}
+    .pl-hours-all{display:grid;gap:0.25rem;padding:0.4rem 0 0.35rem 1.2rem;font-family:var(--mono);font-size:0.68rem;color:var(--fg-3)}
+    .pl-hours-day{color:var(--fg-2);margin-right:0.5rem}
+    .pl-hours-raw{font-family:var(--mono);font-size:0.7rem;color:var(--fg-3);margin:0.5rem 0}
+    .pl-cuisine{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--fg-3);margin-top:0.4rem}
+    .pl-mini-map{height:180px;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--line);margin-top:0.85rem;background:var(--ink-2)}
+    /* music */
+    .music-head{display:grid;grid-template-columns:80px 1fr;gap:0.95rem;align-items:center;margin-bottom:0.85rem}
+    .music-thumb{width:80px;height:80px;border-radius:var(--r-sm);overflow:hidden;background:var(--ink-2);border:1px solid var(--line);object-fit:cover}
+    .music-thumb-empty{display:block}
+    .music-meta{min-width:0}
+    .music-name{font-family:var(--serif);font-size:1.45rem;font-weight:400;color:var(--fg);line-height:1.15;letter-spacing:-0.015em;margin-bottom:0.25rem}
+    .music-genres{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--glow);margin-bottom:0.2rem}
+    .music-stats{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.06em;color:var(--fg-3)}
+    .music-bio{font-size:0.92rem;color:var(--fg-2);line-height:1.55;margin-bottom:0.85rem;padding-bottom:0.85rem;border-bottom:1px solid var(--line)}
+    .music-section{margin-bottom:0.85rem}
+    .music-section:last-of-type{margin-bottom:0}
+    .music-section-label{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-4);margin-bottom:0.45rem}
+    .music-tracks{display:grid;gap:0.35rem}
+    .music-track{display:grid;grid-template-columns:1.5rem 1fr auto auto;gap:0.7rem;align-items:center;padding:0.4rem 0.65rem;border:1px solid var(--line);border-radius:var(--r-sm);color:var(--fg-2);transition:all var(--dur) var(--ease)}
+    .music-track:hover{color:var(--glow);border-color:var(--glow-3);background:var(--halo-2)}
+    .music-track-n{font-family:var(--mono);font-size:0.7rem;color:var(--fg-4);text-align:center}
+    .music-track-title{font-size:0.92rem;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .music-track-album{font-family:var(--mono);font-size:0.62rem;color:var(--fg-3);letter-spacing:0.04em;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .music-track-go{color:var(--fg-3);font-size:0.7rem}
+    .music-track:hover .music-track-go{color:var(--glow)}
+    .music-similar{display:flex;flex-wrap:wrap;gap:0.3rem}
+    .music-chip{font-size:0.78rem;color:var(--fg-2);padding:0.2rem 0.6rem;border:1px solid var(--line);border-radius:999px;background:transparent;cursor:pointer;transition:all var(--dur) var(--ease);font-family:var(--sans)}
+    .music-chip:hover{color:var(--glow);border-color:var(--glow-3);background:var(--halo-2)}
+    .music-actions{display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.75rem}
+    .music-loading{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-4);padding:0.3rem 0}
+    @media(max-width:640px){.music-head{grid-template-columns:60px 1fr}.music-thumb{width:60px;height:60px}.music-name{font-size:1.2rem}.music-track-album{max-width:80px}}
+    /* news */
+    .news-list{display:flex;flex-direction:column;gap:0.85rem}
+    .news-item{display:grid;grid-template-columns:90px 1fr;gap:0.85rem;padding-bottom:0.85rem;border-bottom:1px solid var(--line)}
+    .news-item:last-child{border-bottom:none;padding-bottom:0}
+    .news-item.news-thumb-failed{grid-template-columns:1fr}
+    .news-thumb-link{display:block}
+    .news-thumb{width:90px;height:65px;border-radius:var(--r-sm);overflow:hidden;background:var(--ink-2);border:1px solid var(--line);object-fit:cover;display:block}
+    .news-thumb-empty{display:none}
+    .news-body{min-width:0}
+    .news-title{font-family:var(--serif);font-size:1.05rem;font-weight:400;line-height:1.25;color:var(--glow-2);margin-bottom:0.3rem;display:block;text-decoration:none}
+    .news-title:hover{color:var(--glow);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+    .news-desc{font-size:0.82rem;color:var(--fg-2);line-height:1.45;margin-bottom:0.3rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .news-meta{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.06em;color:var(--fg-3);display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap}
+    .news-meta .dot{color:var(--line-3)}
+    .news-source{color:var(--glow);text-transform:uppercase;letter-spacing:0.08em}
+    .news-loading{display:flex;align-items:center;gap:0.7rem;color:var(--fg-3);font-family:var(--mono);font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase}
+    .news-error{font-family:var(--mono);font-size:0.72rem;color:var(--coral);letter-spacing:0.08em;text-transform:uppercase}
+    @media(max-width:640px){.news-item{grid-template-columns:60px 1fr;gap:0.6rem}.news-thumb{width:60px;height:45px}.news-title{font-size:0.95rem}}
+    @media(max-width:640px){
+      #entity-card-mount{padding:1rem 0.9rem 0}.entity-card-primary{font-size:1.6rem}
+      .dict-word{font-size:1.6rem}
+      .wx-now-temp{font-size:2.1rem}.wx-now-icon{font-size:2rem}
+      .kp-layout{grid-template-columns:1fr}.kp-thumb{max-width:140px;aspect-ratio:auto;height:140px}
+      .pl-name{font-size:1.2rem}
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="readout readout-tl"><span id="clock">--:--:-- UTC</span></div>
+  <div class="readout readout-tr"><span class="pulse"></span>FATHOM<span class="dot">//</span>v2.0</div>
+  <div class="readout readout-bl" id="coord">0°00'N&nbsp;&nbsp;0°00'W</div>
+  <div class="readout readout-br"><button id="help-btn" aria-label="Keyboard shortcuts">?<span class="dot">·</span>KEYS</button></div>
+
+  <section id="home">
+    <header class="brand">
+      <img class="brand-mark" src="/assets/logo.png" alt="Fathom">
+      <h1 class="visually-hidden" style="position:absolute;left:-9999px">Fathom</h1>
+      <p class="brand-tag">search the depths</p>
+    </header>
+    <div class="search">
+      <div class="search-box">
+        <span class="search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+        <input id="q" class="search-input" type="text" placeholder="dive in…" autocomplete="off" spellcheck="false" autofocus aria-label="Search">
+        <button id="submit" class="search-submit" aria-label="Search">dive</button>
+      </div>
+      <span id="bang-chip" class="bang-chip"></span>
+      <div id="suggest" class="suggest" role="listbox" aria-label="Suggestions"></div>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Search category">
+      <button class="tab" role="tab" data-cat="general" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>web</button>
+      <button class="tab" role="tab" data-cat="images"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>images</button>
+      <button class="tab" role="tab" data-cat="news"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>news</button>
+      <button class="tab" role="tab" data-cat="videos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>videos</button>
+      <button class="tab" role="tab" data-cat="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>maps</button>
+      <button class="tab" role="tab" data-cat="it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>code</button>
+      <button class="tab" role="tab" data-cat="science"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6l-5 9a3 3 0 003 4h10a3 3 0 003-4l-5-9V2"/><line x1="9" y1="2" x2="15" y2="2"/></svg>science</button>
+      <button class="tab" role="tab" data-cat="music"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>music</button>
+      <button class="tab" role="tab" data-cat="files"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>files</button>
+    </nav>
+    <div class="home-foot"><div class="recent-row" id="recent-row"></div></div>
+  </section>
+
+  <section id="results" aria-live="polite">
+    <header class="r-header">
+      <div class="r-header-top">
+        <a class="r-logo" id="r-logo" href="/" aria-label="Home"><img class="r-logo-mark" src="/assets/logo.png" alt="Fathom"></a>
+        <div class="r-search-wrap">
+          <div class="r-search-box">
+            <span class="search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <input id="rq" class="r-search-input" type="text" placeholder="search…" autocomplete="off" spellcheck="false" aria-label="Search">
+            <button id="r-submit" class="r-search-submit">dive</button>
+          </div>
+          <div id="r-suggest" class="suggest" role="listbox"></div>
+        </div>
+        <div class="r-tools">
+          <button class="icon-btn" id="near-me" title="Near me" aria-label="Search near me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M22 12h-3M5 12H2M19.07 4.93l-2.12 2.12M7.05 16.95l-2.12 2.12M19.07 19.07l-2.12-2.12M7.05 7.05L4.93 4.93"/></svg></button>
+          <button class="icon-btn" id="help-btn-2" title="Keyboard shortcuts (press ?)" aria-label="Shortcuts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.09 9a3 3 0 115.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="0.5"/><circle cx="12" cy="12" r="10"/></svg></button>
+        </div>
+      </div>
+      <div class="r-header-bot">
+        <nav class="r-tabs" id="r-tabs" role="tablist" aria-label="Search category"></nav>
+        <div class="r-spacer"></div>
+        <div class="r-filters">
+          <select class="r-filter" id="f-time" aria-label="Time range"><option value="">any time</option><option value="day">past day</option><option value="week">past week</option><option value="month">past month</option><option value="year">past year</option></select>
+          <select class="r-filter" id="f-lang" aria-label="Language"><option value="">any language</option><option value="en">english</option><option value="es">español</option><option value="fr">français</option><option value="de">deutsch</option><option value="ja">日本語</option><option value="zh">中文</option></select>
+          <select class="r-filter" id="f-safe" aria-label="Safe search"><option value="0">safe off</option><option value="1" selected>safe moderate</option><option value="2">safe strict</option></select>
+        </div>
+      </div>
+    </header>
+    <div id="entity-card-mount" aria-live="polite"></div>
+    <div class="r-body" id="r-body">
+      <main class="r-main" id="r-main"></main>
+      <aside class="r-side" id="r-side" hidden></aside>
+    </div>
+  </section>
+</div>
+
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
+  <div class="lb-top">
+    <div class="lb-info"><div class="lb-title" id="lb-title"></div><a class="lb-source" id="lb-source" href="#" target="_blank" rel="noopener"></a></div>
+    <div class="lb-actions">
+      <a class="icon-btn" id="lb-open" target="_blank" rel="noopener" title="Open original"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
+      <button class="icon-btn" id="lb-copy" title="Copy image URL"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+      <button class="icon-btn" id="lb-close" title="Close (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  </div>
+  <div class="lb-stage">
+    <button class="lb-nav lb-prev" id="lb-prev" aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <img id="lb-img" alt="">
+    <button class="lb-nav lb-next" id="lb-next" aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+  </div>
+  <div class="lb-foot"><span id="lb-count">1 / 1</span><span>← → NAVIGATE&nbsp;&nbsp;•&nbsp;&nbsp;ESC CLOSE</span></div>
+</div>
+
+<div id="help" class="help-overlay" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="help-panel">
+    <h2 class="help-title"><em>/</em> shortcuts</h2>
+    <div class="help-grid">
+      <div><kbd>/</kbd></div><span>Focus search</span>
+      <div><kbd>Enter</kbd></div><span>Run search</span>
+      <div><kbd>↑</kbd><kbd>↓</kbd></div><span>Navigate suggestions</span>
+      <div><kbd>Tab</kbd></div><span>Complete suggestion</span>
+      <div><kbd>Esc</kbd></div><span>Clear / close overlay</span>
+      <div><kbd>g</kbd><kbd>h</kbd></div><span>Go home</span>
+      <div><kbd>1</kbd>–<kbd>9</kbd></div><span>Switch category</span>
+      <div><kbd>j</kbd><kbd>k</kbd></div><span>Next / previous result</span>
+      <div><kbd>o</kbd></div><span>Open focused result</span>
+      <div><kbd>n</kbd><kbd>p</kbd></div><span>Next / previous page</span>
+      <div><kbd>?</kbd></div><span>Toggle this help</span>
+    </div>
+    <div class="help-foot">Bang syntax: <kbd>!w</kbd> wiki <span class="dot">·</span> <kbd>!gh</kbd> github <span class="dot">·</span> <kbd>!yt</kbd> youtube <span class="dot">·</span> <kbd>!mdn</kbd> <span class="dot">·</span> <kbd>!arch</kbd></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(() => {
+  'use strict';
+  const API = '/searxng';
+  const CATEGORIES = [
+    {id:'general',label:'web'},{id:'images',label:'images'},{id:'news',label:'news'},{id:'videos',label:'videos'},
+    {id:'map',label:'maps'},{id:'it',label:'code'},{id:'science',label:'science'},{id:'music',label:'music'},{id:'files',label:'files'},
+  ];
+  const BANGS = {
+    w:'https://en.wikipedia.org/wiki/Special:Search?search=%s',
+    gh:'https://github.com/search?q=%s',
+    yt:'https://www.youtube.com/results?search_query=%s',
+    r:'https://old.reddit.com/search?q=%s',
+    so:'https://stackoverflow.com/search?q=%s',
+    npm:'https://www.npmjs.com/search?q=%s',
+    g:'https://www.google.com/search?q=%s',
+    ddg:'https://duckduckgo.com/?q=%s',
+    osm:'https://www.openstreetmap.org/search?query=%s',
+    map:'https://www.openstreetmap.org/search?query=%s',
+    amz:'https://www.amazon.com/s?k=%s',
+    imdb:'https://www.imdb.com/find?q=%s',
+    mdn:'https://developer.mozilla.org/en-US/search?q=%s',
+    docs:'https://devdocs.io/#q=%s',
+    arch:'https://web.archive.org/web/*/%s',
+    save:'https://web.archive.org/save/%s',
+    def:'https://www.merriam-webster.com/dictionary/%s',
+  };
+  const MAP_PAGE_SIZE = 25;
+  const state = { q:'',cat:'general',page:1,time:'',lang:'',safe:'1',nearMe:false,geo:null,focusIdx:-1,lastResults:[],lastData:null,mapDisplayCount:MAP_PAGE_SIZE,entitySearchId:0 };
+
+  const $ = (s,el=document) => el.querySelector(s);
+  const $$ = (s,el=document) => [...el.querySelectorAll(s)];
+
+  // All dynamic strings are pre-escaped via esc()/eattr() at every interpolation site.
+  // DOMPurify adds defense-in-depth; safeHTML is the single chokepoint for dynamic HTML.
+  const SAFE_CFG = { ADD_ATTR:['target','rel','loading','data-q','data-idx','data-cat','data-page','data-src','aria-current','aria-selected','aria-label','role'] };
+  const safeHTML = (el,tpl) => { el.innerHTML = window.DOMPurify ? DOMPurify.sanitize(tpl, SAFE_CFG) : tpl; };
+
+  const home=$('#home'),results=$('#results'),qInput=$('#q'),rqInput=$('#rq');
+  const mainEl=$('#r-main'),sideEl=$('#r-side'),bodyEl=$('#r-body'),bangChip=$('#bang-chip');
+  const tabsHome=$('#tabs'),tabsR=$('#r-tabs'),toast=$('#toast');
+
+  const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const eattr = s => esc(s);
+  const debounce = (fn,ms) => { let t; return (...a) => { clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+
+  function showToast(msg,dur=1800) {
+    toast.textContent = msg; toast.classList.add('visible');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=>toast.classList.remove('visible'),dur);
+  }
+  const hostOf = url => { try { return new URL(url).hostname.replace(/^www\./,''); } catch { return ''; } };
+  const faviconUrl = url => { const h=hostOf(url); return h?`https://icons.duckduckgo.com/ip3/${h}.ico`:''; };
+  function prettyUrl(url) {
+    try { const u=new URL(url); return { host:u.hostname.replace(/^www\./,''), parts:u.pathname.split('/').filter(Boolean).slice(0,3) }; }
+    catch { return { host:url, parts:[] }; }
+  }
+  function fmtDate(s) {
+    try {
+      const d=new Date(s), diff=(Date.now()-d.getTime())/1000;
+      if(diff<60) return 'just now';
+      if(diff<3600) return Math.floor(diff/60)+'m ago';
+      if(diff<86400) return Math.floor(diff/3600)+'h ago';
+      if(diff<86400*7) return Math.floor(diff/86400)+'d ago';
+      return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    } catch { return ''; }
+  }
+  function highlight(text,q) {
+    if(!q) return esc(text);
+    const terms = q.split(/\s+/).filter(t=>t.length>2).map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+    if(!terms.length) return esc(text);
+    return esc(text).replace(new RegExp(`(${terms.join('|')})`,'gi'),'<mark>$1</mark>');
+  }
+
+  // ═══════════════════════════════════════════════
+  // === Entity Cards (Phase 2b.1) ===
+  // Client-side intent router. Detects query type, renders card above results.
+  // Detectors are fast/regex-only; router falls through to 'general' (no card)
+  // for unrecognized queries. Later phases add dictionary, weather, knowledge,
+  // place, music — each plugs into the detectors[] array below.
+  // ═══════════════════════════════════════════════
+
+  // --- Calculator ---------------------------------
+  // Whitelist chars only. Tokenize + shunting-yard → RPN. Pure parser, no JS interpreters.
+  function detectCalculator(q) {
+    const s = q.trim();
+    if (!s) return null;
+    if (!/^[\s()0-9+\-*/.,%^]+$/.test(s)) return null;
+    if (!/[+\-*/^%]/.test(s)) return null;   // need at least one arithmetic operator
+    if (!/\d/.test(s)) return null;          // need at least one digit
+    try {
+      const val = computeArith(s.replace(/,/g, ''));
+      if (!Number.isFinite(val)) return { type:'calculator', data:{ expr:s, result:'undefined' } };
+      return { type:'calculator', data:{ expr:s, result:val } };
+    } catch { return null; }
+  }
+
+  function computeArith(expr) {
+    // Tokenize. '**' collapses to '^'.
+    const toks = [];
+    let i = 0;
+    while (i < expr.length) {
+      const c = expr[i];
+      if (/\s/.test(c)) { i++; continue; }
+      if (/[0-9.]/.test(c)) {
+        let j = i;
+        while (j < expr.length && /[0-9.]/.test(expr[j])) j++;
+        toks.push({ t:'n', v:parseFloat(expr.slice(i, j)) }); i = j; continue;
+      }
+      if (c === '*' && expr[i+1] === '*') { toks.push({ t:'o', v:'^' }); i += 2; continue; }
+      if (c === '^') { toks.push({ t:'o', v:'^' }); i++; continue; }
+      if ('+-*/%()'.includes(c)) { toks.push({ t:'o', v:c }); i++; continue; }
+      throw new Error('bad char');
+    }
+    // Shunting-yard → RPN, with unary +/- handling.
+    const prec = { '+':1, '-':1, '*':2, '/':2, '%':2, '^':3 };
+    const rightAssoc = { '^':true };
+    const out = [], ops = [];
+    let prev = null;
+    for (const t of toks) {
+      if (t.t === 'n') { out.push(t); prev = t; continue; }
+      const o = t.v;
+      if (o === '(') { ops.push(t); prev = t; continue; }
+      if (o === ')') {
+        while (ops.length && ops[ops.length-1].v !== '(') out.push(ops.pop());
+        if (!ops.length) throw new Error('paren');
+        ops.pop(); prev = t; continue;
+      }
+      const isUnary = (o === '-' || o === '+') && (prev === null || (prev.t === 'o' && prev.v !== ')'));
+      if (isUnary) {
+        if (o === '+') continue;          // unary + is a no-op
+        out.push({ t:'n', v:0 });          // unary - → emit 0 first, treat as binary
+      }
+      while (ops.length) {
+        const top = ops[ops.length-1];
+        if (top.v === '(') break;
+        if (prec[top.v] > prec[o] || (prec[top.v] === prec[o] && !rightAssoc[o])) out.push(ops.pop());
+        else break;
+      }
+      ops.push(t); prev = t;
+    }
+    while (ops.length) {
+      const t = ops.pop();
+      if (t.v === '(') throw new Error('paren');
+      out.push(t);
+    }
+    // Evaluate RPN.
+    const stk = [];
+    for (const t of out) {
+      if (t.t === 'n') { stk.push(t.v); continue; }
+      const b = stk.pop(), a = stk.pop();
+      if (a === undefined) throw new Error('bad expr');
+      let v;
+      switch (t.v) {
+        case '+': v = a + b; break;
+        case '-': v = a - b; break;
+        case '*': v = a * b; break;
+        case '/': v = b === 0 ? Infinity : a / b; break;
+        case '%': v = b === 0 ? NaN : a % b; break;
+        case '^': v = Math.pow(a, b); break;
+        default: throw new Error('bad op');
+      }
+      stk.push(v);
+    }
+    if (stk.length !== 1) throw new Error('bad expr');
+    return stk[0];
+  }
+
+  function formatCalcResult(r) {
+    if (r === 'undefined' || r === Infinity || r === -Infinity || Number.isNaN(r)) return 'undefined';
+    if (Number.isInteger(r)) return r.toLocaleString('en-US');
+    return parseFloat(r.toFixed(10)).toString();
+  }
+
+  function renderCalculatorCard(data, mount) {
+    const display = formatCalcResult(data.result);
+    const tpl = `<div class="entity-card" role="region" aria-label="Calculator">
+      <div class="entity-card-label">// calculator</div>
+      <div class="entity-card-primary">${esc(display)}</div>
+      <div class="entity-card-sub">${esc(data.expr)} =</div>
+      <div class="entity-card-actions">
+        <button class="entity-card-btn" data-copy="${eattr(display)}">copy result</button>
+      </div>
+    </div>`;
+    safeHTML(mount, tpl);
+    wireEntityCardActions(mount);
+  }
+
+  // --- Unit Conversion ----------------------------
+  const UNIT_SYS = {
+    length: { units: {
+      mm:0.001, millimeter:0.001, millimeters:0.001, millimetre:0.001, millimetres:0.001,
+      cm:0.01, centimeter:0.01, centimeters:0.01, centimetre:0.01, centimetres:0.01,
+      m:1, meter:1, meters:1, metre:1, metres:1,
+      km:1000, kilometer:1000, kilometers:1000, kilometre:1000, kilometres:1000,
+      in:0.0254, inch:0.0254, inches:0.0254,
+      ft:0.3048, foot:0.3048, feet:0.3048,
+      yd:0.9144, yard:0.9144, yards:0.9144,
+      mi:1609.344, mile:1609.344, miles:1609.344,
+      nmi:1852,
+    }},
+    weight: { units: {
+      mg:0.001, milligram:0.001, milligrams:0.001,
+      g:1, gram:1, grams:1,
+      kg:1000, kilogram:1000, kilograms:1000,
+      lb:453.59237, lbs:453.59237, pound:453.59237, pounds:453.59237,
+      oz:28.349523125, ounce:28.349523125, ounces:28.349523125,
+      st:6350.29318, stone:6350.29318, stones:6350.29318,
+      t:1000000, tonne:1000000, tonnes:1000000,
+      ton:907184.74, tons:907184.74,
+    }},
+    volume: { units: {
+      ml:1, milliliter:1, milliliters:1, millilitre:1, millilitres:1,
+      cl:10, dl:100,
+      l:1000, liter:1000, liters:1000, litre:1000, litres:1000,
+      gal:3785.411784, gallon:3785.411784, gallons:3785.411784,
+      qt:946.352946, quart:946.352946, quarts:946.352946,
+      pt:473.176473, pint:473.176473, pints:473.176473,
+      floz:29.5735295625,
+      cup:236.5882365, cups:236.5882365,
+      tsp:4.92892159375, tbsp:14.78676478125,
+    }},
+    time: { units: {
+      ms:0.001,
+      s:1, sec:1, secs:1, second:1, seconds:1,
+      min:60, mins:60, minute:60, minutes:60,
+      h:3600, hr:3600, hrs:3600, hour:3600, hours:3600,
+      d:86400, day:86400, days:86400,
+      w:604800, week:604800, weeks:604800,
+      mo:2629800, month:2629800, months:2629800,
+      y:31557600, yr:31557600, year:31557600, years:31557600,
+    }},
+  };
+
+  const UNIT_ALIASES = {
+    '°c':'c', '°f':'f', '°k':'k',
+    celsius:'c', fahrenheit:'f', kelvin:'k',
+  };
+
+  function normUnit(u) {
+    const l = u.toLowerCase().trim();
+    return UNIT_ALIASES[l] || l;
+  }
+
+  function findUnitSystem(u) {
+    const n = normUnit(u);
+    if (['c','f','k'].includes(n)) return { system:'temperature', unit:n };
+    for (const [sys, def] of Object.entries(UNIT_SYS)) {
+      if (def.units && def.units[n] !== undefined) return { system:sys, unit:n };
+    }
+    return null;
+  }
+
+  function convertTemp(val, from, to) {
+    let c;
+    if (from === 'c') c = val;
+    else if (from === 'f') c = (val - 32) * 5 / 9;
+    else if (from === 'k') c = val - 273.15;
+    else return null;
+    if (to === 'c') return c;
+    if (to === 'f') return c * 9 / 5 + 32;
+    if (to === 'k') return c + 273.15;
+    return null;
+  }
+
+  function detectUnitConversion(q) {
+    const m = q.match(/^\s*([\d.,]+)\s*([a-zA-Z°]+)\s+(?:to|in|as)\s+([a-zA-Z°]+)\s*$/i);
+    if (!m) return null;
+    const val = parseFloat(m[1].replace(/,/g, ''));
+    if (!Number.isFinite(val)) return null;
+    const from = findUnitSystem(m[2]);
+    const to   = findUnitSystem(m[3]);
+    if (!from || !to || from.system !== to.system) return null;
+    let result;
+    if (from.system === 'temperature') {
+      result = convertTemp(val, from.unit, to.unit);
+    } else {
+      const units = UNIT_SYS[from.system].units;
+      result = (val * units[from.unit]) / units[to.unit];
+    }
+    if (!Number.isFinite(result)) return null;
+    return { type:'unit_conversion', data:{
+      value: val, fromRaw: m[2], toRaw: m[3],
+      fromKey: from.unit, toKey: to.unit,
+      system: from.system, result,
+    }};
+  }
+
+  function formatUnitValue(v) {
+    if (Number.isInteger(v)) return v.toLocaleString('en-US');
+    return parseFloat(v.toFixed(6)).toString();
+  }
+
+  function renderUnitConversionCard(data, mount) {
+    const rstr = formatUnitValue(data.result);
+    const vstr = formatUnitValue(data.value);
+    const tpl = `<div class="entity-card" role="region" aria-label="Unit conversion">
+      <div class="entity-card-label">// unit conversion · ${esc(data.system)}</div>
+      <div class="entity-card-primary">${esc(rstr)}<span class="entity-card-unit">${esc(data.toRaw)}</span></div>
+      <div class="entity-card-sub">${esc(vstr)} ${esc(data.fromRaw)} = ${esc(rstr)} ${esc(data.toRaw)}</div>
+      <div class="entity-card-actions">
+        <button class="entity-card-btn" data-copy="${eattr(rstr)}">copy</button>
+        <button class="entity-card-btn" data-copy="${eattr(rstr + ' ' + data.toRaw)}">copy with unit</button>
+      </div>
+    </div>`;
+    safeHTML(mount, tpl);
+    wireEntityCardActions(mount);
+  }
+
+  // --- Shared: cache + fetch helpers (Phase 2b.2) -------------------
+  const ENTITY_CACHE = new Map();                  // key → { value, ts }
+  const ENTITY_TTL_MS = 5 * 60 * 1000;
+  function cacheGet(key) {
+    const e = ENTITY_CACHE.get(key);
+    if (!e) return undefined;
+    if (Date.now() - e.ts > ENTITY_TTL_MS) { ENTITY_CACHE.delete(key); return undefined; }
+    return e.value;
+  }
+  function cacheSet(key, value) { ENTITY_CACHE.set(key, { value, ts: Date.now() }); }
+
+  async function fetchJSON(url, opts = {}, timeoutMs = 6000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        ...opts, signal: ctrl.signal,
+        headers: { 'Accept': 'application/json', ...(opts.headers || {}) },
+      });
+      if (!res.ok) { const err = new Error(`HTTP ${res.status}`); err.status = res.status; throw err; }
+      return await res.json();
+    } finally { clearTimeout(t); }
+  }
+
+  // --- Dictionary ----------------------------------------------------
+  async function detectDictionary(q) {
+    let word, conf;
+    const explicit = q.match(/^(?:define|meaning of|what does)\s+(.+?)(?:\s+mean)?\s*$/i);
+    if (explicit) { word = explicit[1].trim(); conf = 0.8; }
+    else if (/^[a-zA-Z]{2,30}$/.test(q)) { word = q; conf = 0.6; }
+    else return null;
+    word = word.toLowerCase();
+    const key = `dict:${word}`;
+    let data = cacheGet(key);
+    if (data === undefined) {
+      try {
+        data = await fetchJSON(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+        cacheSet(key, data);
+      } catch { cacheSet(key, null); return null; }
+    }
+    if (!data || !Array.isArray(data) || !data.length) return null;
+    return { type:'dictionary', data:{ word, entry:data[0] }, confidence:conf };
+  }
+
+  function renderDictionaryCard(data, mount) {
+    const e = data.entry;
+    const phonetic = (e.phonetic || (e.phonetics || []).find(p => p.text)?.text || '').trim();
+    const audioUrl = (e.phonetics || []).find(p => p.audio && /^https?:/.test(p.audio))?.audio;
+    const meanings = (e.meanings || []).slice(0, 3);
+    const synSet = new Set(), antSet = new Set();
+    for (const m of meanings) {
+      for (const s of m.synonyms || []) synSet.add(s);
+      for (const a of m.antonyms || []) antSet.add(a);
+      for (const d of m.definitions || []) {
+        for (const s of d.synonyms || []) synSet.add(s);
+        for (const a of d.antonyms || []) antSet.add(a);
+      }
+    }
+    const syns = [...synSet].slice(0, 6);
+    const ants = [...antSet].slice(0, 6);
+    const meaningsHtml = meanings.map(m => {
+      const defs = (m.definitions || []).slice(0, 2).map(d => `
+        <div class="dict-def">
+          <div class="dict-def-text">${esc(d.definition || '')}</div>
+          ${d.example ? `<div class="dict-def-ex">&ldquo;${esc(d.example)}&rdquo;</div>` : ''}
+        </div>`).join('');
+      return `<div class="dict-meaning">
+        <div class="dict-pos">${esc(m.partOfSpeech || '')}</div>
+        ${defs}
+      </div>`;
+    }).join('');
+    const chip = (w) => `<button class="dict-chip" data-word="${eattr(w)}">${esc(w)}</button>`;
+    const tpl = `<div class="entity-card dictionary" role="region" aria-label="Dictionary">
+      <div class="entity-card-label">// dictionary</div>
+      <div class="dict-head">
+        <h3 class="dict-word">${esc(e.word || data.word)}</h3>
+        ${phonetic ? `<span class="dict-phon">${esc(phonetic)}</span>` : ''}
+        ${audioUrl ? `<button class="dict-audio" data-audio="${eattr(audioUrl)}" aria-label="Pronounce" title="Play pronunciation">▶</button>` : ''}
+      </div>
+      ${meaningsHtml}
+      ${syns.length ? `<div class="dict-row"><span class="dict-row-label">synonyms</span><div class="dict-chips">${syns.map(chip).join('')}</div></div>` : ''}
+      ${ants.length ? `<div class="dict-row"><span class="dict-row-label">antonyms</span><div class="dict-chips">${ants.map(chip).join('')}</div></div>` : ''}
+      <div class="entity-card-attr">dictionaryapi.dev</div>
+    </div>`;
+    safeHTML(mount, tpl);
+    $$('.dict-audio[data-audio]', mount).forEach(btn => btn.addEventListener('click', () => {
+      try { new Audio(btn.dataset.audio).play(); } catch { showToast('audio unavailable'); }
+    }));
+    $$('.dict-chip[data-word]', mount).forEach(btn => btn.addEventListener('click', () => {
+      setQuery(btn.dataset.word); state.page = 1; doSearch();
+    }));
+  }
+
+  // --- Weather -------------------------------------------------------
+  const WMO_CODES = {
+    0:  { label:'Clear',                       icon:'☀️' },
+    1:  { label:'Mainly clear',                icon:'🌤' },
+    2:  { label:'Partly cloudy',               icon:'⛅' },
+    3:  { label:'Overcast',                    icon:'☁️' },
+    45: { label:'Fog',                         icon:'🌫' },
+    48: { label:'Rime fog',                    icon:'🌫' },
+    51: { label:'Light drizzle',               icon:'🌦' },
+    53: { label:'Drizzle',                     icon:'🌦' },
+    55: { label:'Dense drizzle',               icon:'🌦' },
+    56: { label:'Light freezing drizzle',      icon:'🌧' },
+    57: { label:'Freezing drizzle',            icon:'🌧' },
+    61: { label:'Light rain',                  icon:'🌧' },
+    63: { label:'Rain',                        icon:'🌧' },
+    65: { label:'Heavy rain',                  icon:'🌧' },
+    66: { label:'Light freezing rain',         icon:'🌧' },
+    67: { label:'Heavy freezing rain',         icon:'🌧' },
+    71: { label:'Light snow',                  icon:'🌨' },
+    73: { label:'Snow',                        icon:'🌨' },
+    75: { label:'Heavy snow',                  icon:'❄️' },
+    77: { label:'Snow grains',                 icon:'🌨' },
+    80: { label:'Light showers',               icon:'🌦' },
+    81: { label:'Showers',                     icon:'🌧' },
+    82: { label:'Heavy showers',               icon:'⛈' },
+    85: { label:'Light snow showers',          icon:'🌨' },
+    86: { label:'Snow showers',                icon:'🌨' },
+    95: { label:'Thunderstorm',                icon:'⛈' },
+    96: { label:'Thunderstorm w/ hail',        icon:'⛈' },
+    99: { label:'Heavy thunderstorm w/ hail',  icon:'⛈' },
+  };
+  const TEMP_UNIT_KEY = 'fathom_temp_unit';
+  const getTempUnit = () => (localStorage.getItem(TEMP_UNIT_KEY) || 'fahrenheit');
+  const setTempUnit = (u) => localStorage.setItem(TEMP_UNIT_KEY, u);
+
+  async function detectWeather(q) {
+    const m = q.match(/^(?:weather|forecast|temperature)(?:\s+(?:in|for|at)\s+(.+?))?\s*$/i);
+    if (!m) return null;
+    const place = m[1] ? m[1].trim() : null;
+    return { type:'weather', data:{ place }, confidence:0.9 };
+  }
+
+  function weatherLoadingTpl(msg) {
+    return `<div class="entity-card weather" role="region" aria-label="Weather">
+      <div class="entity-card-label">// weather</div>
+      <div class="weather-loading"><div class="sonar"><span></span></div><span>${esc(msg)}</span></div>
+    </div>`;
+  }
+  function weatherErrorTpl(msg) {
+    return `<div class="entity-card weather" role="region">
+      <div class="entity-card-label">// weather</div>
+      <div class="weather-error">${esc(msg)}</div>
+    </div>`;
+  }
+  function weatherManualTpl(permanentlyDenied, errCode) {
+    // errCode: 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT
+    let msg = 'Enter a location to see weather:';
+    let canRetry = false;
+    if (errCode === 3) {
+      msg = "Location request timed out. Try again, or enter a place:";
+      canRetry = true;
+    } else if (errCode === 2) {
+      msg = "Couldn't read your location. Try again, or enter a place:";
+      canRetry = true;
+    } else if (permanentlyDenied) {
+      msg = 'Location access denied. Enter a place to see weather:';
+    }
+    return `<div class="entity-card weather" role="region">
+      <div class="entity-card-label">// weather</div>
+      <div class="weather-manual">
+        <div class="weather-manual-text">${esc(msg)}</div>
+        <form class="weather-manual-form">
+          <input class="weather-manual-input" type="text" placeholder="e.g. brooklyn, ny" autocomplete="off">
+          <button class="entity-card-btn" type="submit">go</button>
+          ${canRetry ? `<button class="entity-card-btn" type="button" data-retry-geo="1">retry location</button>` : ''}
+        </form>
+      </div>
+      <div class="entity-card-attr">open-meteo.com · nominatim</div>
+    </div>`;
+  }
+
+  async function geocodePlaceText(place) {
+    const key = `geocode:${place.toLowerCase()}`;
+    let g = cacheGet(key);
+    if (g === undefined) {
+      try {
+        const arr = await fetchJSON(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1`);
+        g = (arr && arr.length) ? { lat: +arr[0].lat, lng: +arr[0].lon, name: arr[0].display_name } : null;
+        cacheSet(key, g);
+      } catch { cacheSet(key, null); g = null; }
+    }
+    return g;
+  }
+
+  async function reverseGeocode(lat, lng) {
+    const key = `rev:${lat.toFixed(3)},${lng.toFixed(3)}`;
+    let g = cacheGet(key);
+    if (g === undefined) {
+      try {
+        const r = await fetchJSON(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const parts = (r.display_name || '').split(',').slice(0, 2).map(s => s.trim()).filter(Boolean);
+        g = parts.join(', ') || `${lat.toFixed(2)}, ${lng.toFixed(2)}`;
+      } catch { g = `${lat.toFixed(2)}, ${lng.toFixed(2)}`; }
+      cacheSet(key, g);
+    }
+    return g;
+  }
+
+  async function renderWeatherCard(data, mount) {
+    const unit = getTempUnit();
+    let lat, lng, locName;
+
+    if (data.place) {
+      safeHTML(mount, weatherLoadingTpl(`locating ${data.place}…`));
+      const g = await geocodePlaceText(data.place);
+      if (!g) { safeHTML(mount, weatherErrorTpl(`couldn't find "${data.place}"`)); return; }
+      lat = g.lat; lng = g.lng;
+      locName = (g.name || data.place).split(',').slice(0, 2).map(s => s.trim()).filter(Boolean).join(', ');
+    } else if (data.manualPlace) {
+      safeHTML(mount, weatherLoadingTpl(`locating ${data.manualPlace}…`));
+      const g = await geocodePlaceText(data.manualPlace);
+      if (!g) { safeHTML(mount, weatherErrorTpl(`couldn't find "${data.manualPlace}"`)); return; }
+      lat = g.lat; lng = g.lng;
+      locName = (g.name || data.manualPlace).split(',').slice(0, 2).map(s => s.trim()).filter(Boolean).join(', ');
+    } else if (data.coords) {
+      lat = data.coords.lat; lng = data.coords.lng;
+      safeHTML(mount, weatherLoadingTpl('reading location…'));
+      locName = await reverseGeocode(lat, lng);
+    } else if (state.geo) {
+      // Reuse location already granted for the maps tab's "Near me" button.
+      lat = state.geo.lat; lng = state.geo.lng;
+      safeHTML(mount, weatherLoadingTpl('reading location…'));
+      locName = await reverseGeocode(lat, lng);
+    } else {
+      if (!navigator.geolocation || window.__fathomGeoDenied === true) {
+        safeHTML(mount, weatherManualTpl(window.__fathomGeoDenied === true));
+        wireWeatherManual(mount);
+        return;
+      }
+      safeHTML(mount, weatherLoadingTpl('getting your location… (click allow in the browser prompt)'));
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          // 15 s — browsers can take 5-10s to resolve even after Allow, especially mobile
+          navigator.geolocation.getCurrentPosition(p => resolve(p), reject, { timeout:15000, maximumAge:300000, enableHighAccuracy:false });
+        });
+        lat = pos.coords.latitude; lng = pos.coords.longitude;
+        // Cache for the whole session so other parts of the app (maps tab) can reuse it
+        state.geo = { lat, lng };
+        window.__fathomGeoDenied = false;
+        locName = await reverseGeocode(lat, lng);
+      } catch (err) {
+        // PERMISSION_DENIED=1 → remember denial (don't re-prompt on every search)
+        // POSITION_UNAVAILABLE=2 / TIMEOUT=3 → one-off failure, try again next time
+        const permanentDeny = err && err.code === 1;
+        if (permanentDeny) window.__fathomGeoDenied = true;
+        safeHTML(mount, weatherManualTpl(permanentDeny, err?.code));
+        wireWeatherManual(mount);
+        return;
+      }
+    }
+
+    safeHTML(mount, weatherLoadingTpl(`forecasting ${locName}…`));
+    const wkey = `wx:${lat.toFixed(3)},${lng.toFixed(3)}:${unit}`;
+    let wx = cacheGet(wkey);
+    if (wx === undefined) {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&temperature_unit=${unit}&wind_speed_unit=mph&forecast_days=5`;
+      try { wx = await fetchJSON(url); cacheSet(wkey, wx); }
+      catch { safeHTML(mount, weatherErrorTpl('weather service unavailable')); return; }
+    }
+    renderWeatherFinal(mount, { locName, wx, unit, lat, lng });
+  }
+
+  function renderWeatherFinal(mount, { locName, wx, unit, lat, lng }) {
+    const cur = wx.current || {};
+    const curCode = WMO_CODES[cur.weather_code] || { label:'—', icon:'·' };
+    const unitSym = unit === 'fahrenheit' ? '°F' : '°C';
+    const otherUnit = unit === 'fahrenheit' ? 'celsius' : 'fahrenheit';
+    const days = (wx.daily?.time || []).slice(0, 5);
+    const dayNames = days.map(d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short' }));
+    const forecastHtml = days.map((d, i) => {
+      const code = wx.daily.weather_code[i];
+      const hi = Math.round(wx.daily.temperature_2m_max[i]);
+      const lo = Math.round(wx.daily.temperature_2m_min[i]);
+      const pop = wx.daily.precipitation_probability_max?.[i];
+      const w = WMO_CODES[code] || { icon:'·' };
+      return `<div class="wx-day">
+        <div class="wx-day-name">${i === 0 ? 'Today' : esc(dayNames[i])}</div>
+        <div class="wx-day-icon">${w.icon}</div>
+        <div class="wx-day-range"><span class="wx-hi">${hi}°</span><span class="wx-lo">${lo}°</span></div>
+        ${pop != null ? `<div class="wx-pop">${pop}%</div>` : ''}
+      </div>`;
+    }).join('');
+    const tpl = `<div class="entity-card weather" role="region" aria-label="Weather">
+      <div class="entity-card-label">// weather</div>
+      <div class="wx-head">
+        <div class="wx-loc">${esc(locName)}</div>
+        <button class="wx-unit" data-other="${otherUnit}" title="Switch to °${otherUnit === 'fahrenheit' ? 'F' : 'C'}">${unitSym}</button>
+      </div>
+      <div class="wx-now">
+        <span class="wx-now-icon">${curCode.icon}</span>
+        <span class="wx-now-temp">${Math.round(cur.temperature_2m)}°</span>
+        <div class="wx-now-meta">
+          <div class="wx-now-label">${esc(curCode.label)}</div>
+          <div class="wx-now-sub">${cur.relative_humidity_2m != null ? `humidity ${cur.relative_humidity_2m}%` : ''}${cur.wind_speed_10m != null ? ` · wind ${Math.round(cur.wind_speed_10m)} mph` : ''}</div>
+        </div>
+      </div>
+      <div class="wx-forecast">${forecastHtml}</div>
+      <div class="entity-card-attr">open-meteo.com · geocoding by nominatim</div>
+    </div>`;
+    safeHTML(mount, tpl);
+    $$('.wx-unit[data-other]', mount).forEach(btn => btn.addEventListener('click', () => {
+      setTempUnit(btn.dataset.other);
+      renderWeatherCard({ coords:{ lat, lng } }, mount);
+    }));
+  }
+
+  function wireWeatherManual(mount) {
+    const form = $('.weather-manual-form', mount);
+    if (!form) return;
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const input = $('.weather-manual-input', form);
+      const val = (input.value || '').trim();
+      if (!val) return;
+      renderWeatherCard({ manualPlace: val }, mount);
+    });
+    const retryBtn = $('[data-retry-geo]', form);
+    if (retryBtn) retryBtn.addEventListener('click', () => {
+      // Force a fresh geolocation attempt — clear any stale denial and skip cached state.geo
+      window.__fathomGeoDenied = false;
+      state.geo = null;
+      renderWeatherCard({}, mount);
+    });
+  }
+
+  // --- Knowledge (Wikipedia) -----------------------------------------
+  async function detectKnowledge(q) {
+    let subject, conf;
+    const explicit = q.match(/^(?:who|what|where)\s+(?:is|was|are|were)\s+(.+?)\??\s*$/i);
+    if (explicit) { subject = explicit[1].trim(); conf = 0.7; }
+    else {
+      const words = q.trim().split(/\s+/);
+      if (words.length < 2 || words.length > 6) return null;
+      if (!words.every(w => /^[A-Z][a-zA-Z'-]+$/.test(w))) return null;
+      subject = q.trim(); conf = 0.5;
+    }
+    const key = `wiki:${subject.toLowerCase()}`;
+    let summary = cacheGet(key);
+    if (summary === undefined) {
+      try {
+        const search = await fetchJSON(`https://en.wikipedia.org/w/rest.php/v1/search/title?q=${encodeURIComponent(subject)}&limit=1`);
+        const title = search?.pages?.[0]?.title;
+        if (!title) { cacheSet(key, null); return null; }
+        summary = await fetchJSON(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+        cacheSet(key, summary);
+      } catch { cacheSet(key, null); return null; }
+    }
+    if (!summary) return null;
+    if (summary.type === 'disambiguation') return null;
+    if (!summary.extract) return null;
+    return { type:'knowledge', data:{ summary, subject }, confidence:conf };
+  }
+
+  function renderKnowledgeCard(data, mount) {
+    const s = data.summary;
+    const extract = (s.extract || '').length > 400
+      ? s.extract.slice(0, 400).replace(/\s\S*$/, '') + '…'
+      : s.extract;
+    const thumb = s.thumbnail;
+    const page = s.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(s.title)}`;
+    const tpl = `<div class="entity-card knowledge" role="region" aria-label="Knowledge">
+      <div class="entity-card-label">// knowledge</div>
+      <div class="kp-layout">
+        ${thumb ? `<div class="kp-thumb"><img src="${eattr(thumb.source)}" alt="" loading="lazy"></div>` : ''}
+        <div class="kp-body">
+          <h3 class="kp-title"><a href="${eattr(page)}" target="_blank" rel="noopener">${esc(s.title)}</a></h3>
+          ${s.description ? `<div class="kp-desc">${esc(s.description)}</div>` : ''}
+          <div class="kp-extract">${esc(extract)}</div>
+        </div>
+      </div>
+      <div class="entity-card-attr">From <a href="${eattr(page)}" target="_blank" rel="noopener">Wikipedia</a>, CC BY-SA 3.0</div>
+    </div>`;
+    safeHTML(mount, tpl);
+  }
+
+  // --- Place ---------------------------------------------------------
+  const PLACE_TYPES = new Set(['restaurant','cafe','bar','shop','supermarket','fast_food','pub','hotel','attraction','museum','park','garden','playground','library','university','school','hospital','pharmacy','bank','atm','fuel','parking','theatre','cinema']);
+  const PLACE_CLASSES = new Set(['amenity','leisure','tourism','shop']);
+
+  async function detectPlace(q) {
+    if (q.length < 3) return null;
+    if (/^[\d.,+\-*/^%() ]+$/.test(q)) return null;  // looks like math
+    if (/^(?:weather|forecast|temperature|define|meaning of|what does|who|what|where)\b/i.test(q)) return null;
+
+    // Cache by location bucket so a move/relocate doesn't serve stale-biased results.
+    const locKey = state.geo ? `${state.geo.lat.toFixed(2)},${state.geo.lng.toFixed(2)}` : 'global';
+    const key = `place:${locKey}:${q.toLowerCase()}`;
+    let geo = cacheGet(key);
+    if (geo === undefined) {
+      // Soft viewbox bias toward the user (~75 km box, bounded=0 = preference not filter).
+      // For "ju rin" this surfaces the nearest one; for "ju rin geneva" the textual "geneva"
+      // still wins over the bias and we get the Swiss restaurant.
+      let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&extratags=1&namedetails=1&limit=1`;
+      if (state.geo) {
+        const dLat = 0.7;                                                          // ~75 km
+        const dLng = 0.7 / Math.max(0.1, Math.cos(state.geo.lat * Math.PI / 180));
+        const vb = `${state.geo.lng - dLng},${state.geo.lat + dLat},${state.geo.lng + dLng},${state.geo.lat - dLat}`;
+        url += `&viewbox=${vb}&bounded=0`;
+      }
+      try {
+        const arr = await fetchJSON(url);
+        geo = (arr && arr.length) ? arr[0] : null;
+        cacheSet(key, geo);
+      } catch { cacheSet(key, null); return null; }
+    }
+    if (!geo) return null;
+    const gclass = geo.class || geo.category;
+    const gtype = geo.type;
+    const imp = parseFloat(geo.importance || 0);
+    if (!(PLACE_CLASSES.has(gclass) || PLACE_TYPES.has(gtype))) return null;
+
+    // Specific businesses (amenity/shop/tourism) bypass the importance gate — those
+    // are inherently low-importance, and a textual match against a real business
+    // name is signal enough. Generic class=place/leisure entries still need to clear
+    // the gate to avoid false positives on vague multi-word queries.
+    const isSpecificBusiness = gclass === 'amenity' || gclass === 'shop' || gclass === 'tourism';
+    if (!isSpecificBusiness && imp < 0.35 && q.split(/\s+/).length > 2) return null;
+
+    return { type:'place', data:{ geo }, confidence:0.7 };
+  }
+
+  function parseOpeningHours(raw) {
+    const rules = raw.split(/\s*;\s*/).map(r => r.trim()).filter(Boolean);
+    const out = [];
+    for (const rule of rules) {
+      const m = rule.match(/^([A-Za-z,\-]+)\s+(\d{1,2}:\d{2}-\d{1,2}:\d{2}(?:,\d{1,2}:\d{2}-\d{1,2}:\d{2})*)\s*$/);
+      if (!m) return null;
+      out.push({ days:m[1], hours:m[2] });
+    }
+    return out;
+  }
+  function dayCodeMatches(today, expr) {
+    const d = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    for (const part of expr.split(',')) {
+      if (part.includes('-')) {
+        const [a, b] = part.split('-');
+        const ai = d.indexOf(a), bi = d.indexOf(b), ti = d.indexOf(today);
+        if (ai < 0 || bi < 0 || ti < 0) continue;
+        if (ai <= bi ? (ti >= ai && ti <= bi) : (ti >= ai || ti <= bi)) return true;
+      } else if (part === today) return true;
+    }
+    return false;
+  }
+  function renderHoursBlock(raw) {
+    const parsed = parseOpeningHours(raw);
+    if (!parsed) return `<div class="pl-hours-raw">Hours: ${esc(raw)}</div>`;
+    const today = ['Su','Mo','Tu','We','Th','Fr','Sa'][new Date().getDay()];
+    let todayHours = null;
+    for (const r of parsed) { if (dayCodeMatches(today, r.days)) { todayHours = r.hours; break; } }
+    return `<details class="pl-hours">
+      <summary>${todayHours ? `Today · ${esc(todayHours)}` : 'Today · closed or unspecified'}</summary>
+      <div class="pl-hours-all">${parsed.map(r => `<div><span class="pl-hours-day">${esc(r.days)}</span> <span class="pl-hours-time">${esc(r.hours)}</span></div>`).join('')}</div>
+    </details>`;
+  }
+
+  async function renderPlaceCard(data, mount) {
+    const g = data.geo;
+    const addr = g.address || {};
+    const name = g.namedetails?.name || (g.display_name || '').split(',')[0];
+    const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
+    const city = addr.city || addr.town || addr.village || addr.suburb || addr.borough || '';
+    const cityLine = [street, city, addr.state].filter(Boolean).join(' · ');
+    const ext = g.extratags || {};
+    const hours = ext.opening_hours;
+    const phone = ext.phone || ext['contact:phone'];
+    const website = ext.website || ext['contact:website'];
+    const cuisine = ext.cuisine;
+    const osmUrl = `https://www.openstreetmap.org/${g.osm_type}/${g.osm_id}`;
+    const dirUrl = `https://www.google.com/maps/dir/?api=1&destination=${g.lat},${g.lon}`;
+    const lat = +g.lat, lng = +g.lon;
+    const kindLabel = (g.type || g.class || '').replace(/_/g, ' ');
+    const tpl = `<div class="entity-card place" role="region" aria-label="Place">
+      <div class="entity-card-label">// place${kindLabel ? ' · ' + esc(kindLabel) : ''}</div>
+      <h3 class="pl-name">${esc(name)}</h3>
+      ${cityLine ? `<div class="pl-addr">${esc(cityLine)}</div>` : ''}
+      <div class="pl-actions">
+        <a class="entity-card-btn" href="${eattr(dirUrl)}" target="_blank" rel="noopener">directions →</a>
+        ${phone ? `<a class="entity-card-btn" href="tel:${eattr(phone)}">${esc(phone)}</a>` : ''}
+        ${website ? `<a class="entity-card-btn" href="${eattr(website)}" target="_blank" rel="noopener">website ↗</a>` : ''}
+        <a class="entity-card-btn" href="${eattr(osmUrl)}" target="_blank" rel="noopener">osm ↗</a>
+      </div>
+      ${hours ? renderHoursBlock(hours) : ''}
+      ${cuisine ? `<div class="pl-cuisine">cuisine: ${esc(cuisine.replace(/;/g, ', '))}</div>` : ''}
+      <div class="pl-mini-map" data-lat="${lat}" data-lng="${lng}"></div>
+      <div class="entity-card-attr">© OpenStreetMap contributors</div>
+    </div>`;
+    safeHTML(mount, tpl);
+    initPlaceMiniMap(mount, lat, lng);
+  }
+
+  async function initPlaceMiniMap(mount, lat, lng) {
+    const canvas = $('.pl-mini-map', mount);
+    if (!canvas) return;
+    const L = await loadLeaflet();
+    if (!L) { canvas.remove(); return; }
+    const map = L.map(canvas, {
+      zoomControl:false, attributionControl:false,
+      scrollWheelZoom:false, doubleClickZoom:false,
+      dragging:false, touchZoom:false, keyboard:false,
+    }).setView([lat, lng], 15);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png', {
+      subdomains:'abcd', maxZoom:19,
+    }).addTo(map);
+    const pinSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="34" viewBox="0 0 28 40"><path d="M14 0C6.3 0 0 6.2 0 13.8c0 10.3 14 26.2 14 26.2s14-15.9 14-26.2C28 6.2 21.7 0 14 0z" fill="#5dd5f0" stroke="#03060b" stroke-width="1.5"/><circle cx="14" cy="14" r="4.5" fill="#03060b"/></svg>`;
+    const icon = L.divIcon({ html:pinSvg, className:'fathom-pin', iconSize:[24,34], iconAnchor:[12,34] });
+    L.marker([lat, lng], { icon }).addTo(map);
+    setTimeout(() => map.invalidateSize(), 50);
+  }
+
+  // --- News (NewsData.io, explicit triggers only) -------------------
+  // Conservative — only fires when query explicitly signals news intent.
+  // Avoids competing with the regular results / SearXNG news category.
+  async function detectNews(q) {
+    const s = q.trim();
+    if (/^news$/i.test(s)) return { type:'news', data:{ query:null }, confidence:0.85 };
+    let m = s.match(/^news(?:\s+about)?\s+(.+)$/i);
+    if (m) return { type:'news', data:{ query:m[1].trim() }, confidence:0.85 };
+    m = s.match(/^latest\s+(.+?)\s+news$/i);
+    if (m) return { type:'news', data:{ query:m[1].trim() }, confidence:0.85 };
+    m = s.match(/^(.+?)\s+news$/i);
+    // Lower confidence for the "<topic> news" pattern so dictionary/place can win for short topics.
+    if (m && m[1].length >= 3) return { type:'news', data:{ query:m[1].trim() }, confidence:0.7 };
+    return null;
+  }
+
+  function newsLoadingTpl(msg) {
+    return `<div class="entity-card news" role="region" aria-label="News">
+      <div class="entity-card-label">// news</div>
+      <div class="news-loading"><div class="sonar"><span></span></div><span>${esc(msg)}</span></div>
+    </div>`;
+  }
+  function newsErrorTpl(msg) {
+    return `<div class="entity-card news" role="region">
+      <div class="entity-card-label">// news</div>
+      <div class="news-error">${esc(msg)}</div>
+    </div>`;
+  }
+
+  async function renderNewsCard(data, mount) {
+    const q = data.query;
+    safeHTML(mount, newsLoadingTpl(q ? `searching news: ${q}…` : 'fetching top headlines…'));
+
+    const params = new URLSearchParams({ language: 'en', size: '5' });
+    if (q) params.set('q', q);
+    const cacheKey = `news:${q || '__top__'}`;
+    let resp = cacheGet(cacheKey);
+    if (resp === undefined) {
+      try {
+        resp = await fetchJSON(`/newsdata/api/1/news?${params}`);
+        cacheSet(cacheKey, resp);
+      } catch {
+        safeHTML(mount, newsErrorTpl('news service unavailable'));
+        return;
+      }
+    }
+
+    const articles = (resp.results || []).slice(0, 5);
+    if (!articles.length) {
+      safeHTML(mount, `<div class="entity-card news"><div class="entity-card-label">// news</div><div class="news-error">no news found${q ? ` for "${esc(q)}"` : ''}</div></div>`);
+      return;
+    }
+
+    const itemsHtml = articles.map(a => {
+      const img = a.image_url;
+      const src = a.source_name || a.source_id || '';
+      const when = a.pubDate ? fmtDate(a.pubDate) : '';
+      const desc = (a.description || '').replace(/<[^>]+>/g, '').slice(0, 220);
+      return `<article class="news-item">
+        ${img ? `<a class="news-thumb-link" href="${eattr(a.link)}" target="_blank" rel="noopener"><img class="news-thumb" src="${eattr(img)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('news-thumb-failed');this.remove()"></a>` : '<div class="news-thumb news-thumb-empty"></div>'}
+        <div class="news-body">
+          <a class="news-title" href="${eattr(a.link)}" target="_blank" rel="noopener">${esc(a.title || a.link)}</a>
+          ${desc ? `<div class="news-desc">${esc(desc)}${desc.length >= 220 ? '…' : ''}</div>` : ''}
+          <div class="news-meta">
+            ${src ? `<span class="news-source">${esc(src)}</span>` : ''}
+            ${src && when ? '<span class="dot">·</span>' : ''}
+            ${when ? `<span>${esc(when)}</span>` : ''}
+          </div>
+        </div>
+      </article>`;
+    }).join('');
+
+    safeHTML(mount, `<div class="entity-card news" role="region" aria-label="News">
+      <div class="entity-card-label">// news${q ? ` · ${esc(q)}` : ' · top headlines'} · ${articles.length} of ${(resp.totalResults||articles.length).toLocaleString()}</div>
+      <div class="news-list">${itemsHtml}</div>
+      <div class="entity-card-attr">newsdata.io · free tier ~1-2 hr lag</div>
+    </div>`);
+  }
+
+  // --- Music (Spotify-primary, Last.fm bio + similar artists) -------
+  // Aggressive detector: any query that Spotify search returns as a strong-named
+  // artist match fires the card. Includes obscure EDM / dubstep coverage that
+  // Last.fm doesn't index well. False positives accepted ("apple" → Fiona Apple).
+  async function detectMusic(q) {
+    const s = q.trim();
+    if (s.length < 2) return null;
+    // Skip queries that obviously belong to other detectors (cheap optimization).
+    if (/^[\d.,+\-*/^%() ]+$/.test(s)) return null;                                              // math
+    if (/^(?:weather|forecast|temperature)(?:\s|$)/i.test(s)) return null;                       // weather
+    if (/^(?:define|meaning of|what does)\s/i.test(s)) return null;                              // dict explicit
+    if (/^(?:who|what|where|when|why|how)\s+(?:is|was|are|were|do|does)\s/i.test(s)) return null;// knowledge explicit
+    if (/^[\d.,]+\s*[a-zA-Z°]+\s+(?:to|in|as)\s+/i.test(s)) return null;                          // unit conversion
+
+    const key = `music:${s.toLowerCase()}`;
+    const cached = cacheGet(key);
+    if (cached !== undefined) return cached;
+
+    let spotify;
+    try {
+      spotify = await fetchJSON(`/spotify/v1/search?q=${encodeURIComponent(s)}&type=artist&limit=3`);
+    } catch { cacheSet(key, null); return null; }
+
+    const items = spotify?.artists?.items || [];
+    if (!items.length) { cacheSet(key, null); return null; }
+
+    const top = items[0];
+    const qLow = s.toLowerCase();
+    const nLow = (top.name || '').toLowerCase();
+    let conf;
+    if (qLow === nLow) conf = 0.9;
+    else if (nLow.length >= 3 && (nLow.includes(qLow) || qLow.includes(nLow))) conf = 0.85;
+    else { cacheSet(key, null); return null; }
+
+    const result = { type:'music', data:{ spotify: top, query: s }, confidence: conf };
+    cacheSet(key, result);
+    return result;
+  }
+
+  // Last.fm bios end with `<a href="...">Read more on Last.fm</a>` cruft. Strip it.
+  function stripLastfmBio(text) {
+    if (!text) return '';
+    return text
+      .replace(/<a[^>]*>.*?<\/a>/gi, '')
+      .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  async function renderMusicCard(data, mount) {
+    const sp = data.spotify;
+    const artistName = sp.name;
+    const image = (sp.images || []).reduce((best, img) => (!best || img.width > best.width) ? img : best, null);
+    const followers = sp.followers?.total;
+    const popularity = sp.popularity;
+    const genres = (sp.genres || []).slice(0, 3);
+    const spotifyUrl = sp.external_urls?.spotify;
+    const lastfmUrl = `https://www.last.fm/music/${encodeURIComponent(artistName.replace(/\s+/g, '+'))}`;
+
+    // Render the artist header immediately from the Spotify search hit; lazy-fill
+    // bio/tracks/similar from parallel Last.fm + Spotify-top-tracks calls.
+    const skeletonTpl = `<div class="entity-card music" role="region" aria-label="Music">
+      <div class="entity-card-label">// music</div>
+      <div class="music-head">
+        ${image ? `<img class="music-thumb" src="${eattr(image.url)}" alt="">` : '<div class="music-thumb music-thumb-empty"></div>'}
+        <div class="music-meta">
+          <h3 class="music-name">${esc(artistName)}</h3>
+          <div class="music-genres">${genres.length ? genres.map(g => esc(g)).join(' · ') : 'artist'}</div>
+          <div class="music-stats">${followers ? followers.toLocaleString() + ' followers' : ''}${followers && popularity != null ? ' · ' : ''}${popularity != null ? `popularity ${popularity}` : ''}</div>
+        </div>
+      </div>
+      <div class="music-bio music-loading">loading bio…</div>
+      <div class="music-section music-tracks-wrap">
+        <div class="music-section-label">top tracks</div>
+        <div class="music-tracks music-loading">loading…</div>
+      </div>
+      <div class="music-section music-similar-wrap">
+        <div class="music-section-label">similar artists</div>
+        <div class="music-similar music-loading">loading…</div>
+      </div>
+      <div class="music-actions">
+        ${spotifyUrl ? `<a class="entity-card-btn" href="${eattr(spotifyUrl)}" target="_blank" rel="noopener">open in spotify ↗</a>` : ''}
+        <a class="entity-card-btn" href="${eattr(lastfmUrl)}" target="_blank" rel="noopener">last.fm ↗</a>
+      </div>
+      <div class="entity-card-attr">spotify · last.fm</div>
+    </div>`;
+    safeHTML(mount, skeletonTpl);
+
+    const [infoRes, tracksRes] = await Promise.allSettled([
+      fetchJSON(`/lastfm/?method=artist.getinfo&artist=${encodeURIComponent(artistName)}`),
+      fetchJSON(`/spotify/v1/artists/${sp.id}/top-tracks?market=US`),
+    ]);
+
+    // bio + similar artists from Last.fm (often empty for very-niche artists)
+    let bio = null, similar = [];
+    if (infoRes.status === 'fulfilled' && infoRes.value?.artist) {
+      const a = infoRes.value.artist;
+      bio = stripLastfmBio(a.bio?.summary);
+      similar = (a.similar?.artist || []).slice(0, 6).map(x => x.name);
+    }
+    const bioEl = $('.music-bio', mount);
+    if (bioEl) {
+      bioEl.classList.remove('music-loading');
+      if (bio) {
+        const trimmed = bio.length > 280 ? bio.slice(0, 280).replace(/\s\S*$/, '') + '…' : bio;
+        safeHTML(bioEl, esc(trimmed));
+      } else {
+        bioEl.remove();
+      }
+    }
+    const simEl = $('.music-similar', mount);
+    if (simEl) {
+      simEl.classList.remove('music-loading');
+      if (similar.length) {
+        safeHTML(simEl, similar.map(s => `<button class="music-chip" data-word="${eattr(s)}">${esc(s)}</button>`).join(''));
+        $$('.music-chip', simEl).forEach(b => b.addEventListener('click', () => {
+          setQuery(b.dataset.word); state.page = 1; doSearch();
+        }));
+      } else {
+        $('.music-similar-wrap', mount)?.remove();
+      }
+    }
+
+    // top tracks from Spotify
+    const tracksEl = $('.music-tracks', mount);
+    if (tracksEl) {
+      tracksEl.classList.remove('music-loading');
+      if (tracksRes.status === 'fulfilled' && tracksRes.value?.tracks?.length) {
+        const tracks = tracksRes.value.tracks.slice(0, 5);
+        safeHTML(tracksEl, tracks.map((t, i) => `
+          <a class="music-track" href="${eattr(t.external_urls?.spotify || '#')}" target="_blank" rel="noopener">
+            <span class="music-track-n">${i + 1}</span>
+            <span class="music-track-title">${esc(t.name)}</span>
+            <span class="music-track-album">${esc(t.album?.name || '')}</span>
+            <span class="music-track-go">▶</span>
+          </a>`).join(''));
+      } else {
+        $('.music-tracks-wrap', mount)?.remove();
+      }
+    }
+  }
+
+  // --- Router + shared action wiring (async, confidence+priority) ---
+  // Priority order ties: calc > units > weather > news > music > dict > place > knowledge.
+  // Confidence wins over priority; ties broken by the priority order.
+  const INTENT_PRIORITY = ['calculator','unit_conversion','weather','news','music','dictionary','place','knowledge'];
+
+  async function detectIntent(q) {
+    const s = (q || '').trim();
+    if (!s) return { type:'general', data:null, confidence:0 };
+
+    // Fast sync detectors: if either matches, they can't be beaten (1.0 confidence).
+    // Short-circuit here to avoid burning Nominatim/Wikipedia/Spotify calls on "2+2" etc.
+    const calc = detectCalculator(s);
+    if (calc) return { ...calc, confidence: 1.0 };
+    const unit = detectUnitConversion(s);
+    if (unit) return { ...unit, confidence: 1.0 };
+
+    // Async detectors run concurrently; pick the best hit.
+    const detectors = [
+      detectWeather,
+      detectNews,
+      detectDictionary,
+      detectKnowledge,
+      detectPlace,
+      detectMusic,
+    ];
+    const results = await Promise.allSettled(detectors.map(fn => fn(s)));
+    const hits = results
+      .filter(r => r.status === 'fulfilled' && r.value)
+      .map(r => r.value);
+    if (!hits.length) return { type:'general', data:null, confidence:0 };
+    hits.sort((a, b) =>
+      (b.confidence - a.confidence) ||
+      (INTENT_PRIORITY.indexOf(a.type) - INTENT_PRIORITY.indexOf(b.type))
+    );
+    return hits[0];
+  }
+
+  async function renderEntityCard(intent, mount) {
+    if (!mount) return;
+    if (!intent || intent.type === 'general') { safeHTML(mount, ''); return; }
+    switch (intent.type) {
+      case 'calculator':      return renderCalculatorCard(intent.data, mount);
+      case 'unit_conversion': return renderUnitConversionCard(intent.data, mount);
+      case 'dictionary':      return renderDictionaryCard(intent.data, mount);
+      case 'weather':         return renderWeatherCard(intent.data, mount);
+      case 'knowledge':       return renderKnowledgeCard(intent.data, mount);
+      case 'place':           return renderPlaceCard(intent.data, mount);
+      case 'music':           return renderMusicCard(intent.data, mount);
+      case 'news':            return renderNewsCard(intent.data, mount);
+      default: safeHTML(mount, '');
+    }
+  }
+
+  function wireEntityCardActions(mount) {
+    $$('.entity-card-btn[data-copy]', mount).forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(btn.dataset.copy); showToast('copied'); }
+        catch { showToast('copy failed'); }
+      });
+    });
+  }
+
+  // --- Card dismissal (universal X button) --------------------------
+  // Sticks an X in the top-right of any rendered .entity-card. Click → empties
+  // the mount AND records the query in sessionStorage so the same query
+  // doesn't re-show the card during this session. Refresh the tab to forget.
+  const DISMISS_KEY = 'fathom:dismissedCards';
+  function isCardDismissed(q) {
+    if (!q) return false;
+    try {
+      const d = JSON.parse(sessionStorage.getItem(DISMISS_KEY) || '{}');
+      return !!d[q.toLowerCase()];
+    } catch { return false; }
+  }
+  function recordCardDismissal(q) {
+    if (!q) return;
+    try {
+      const d = JSON.parse(sessionStorage.getItem(DISMISS_KEY) || '{}');
+      d[q.toLowerCase()] = Date.now();
+      sessionStorage.setItem(DISMISS_KEY, JSON.stringify(d));
+    } catch {}
+  }
+  function ensureCardCloseBtn(mount) {
+    const card = mount.querySelector('.entity-card');
+    if (!card || card.querySelector('.entity-card-close')) return;
+    const btn = document.createElement('button');
+    btn.className = 'entity-card-close';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Dismiss card');
+    btn.title = 'Dismiss';
+    btn.textContent = '×';
+    btn.addEventListener('click', () => {
+      recordCardDismissal(state.q);
+      safeHTML(mount, '');
+      showToast('card dismissed');
+    });
+    card.appendChild(btn);
+  }
+  // === /Entity Cards ===
+
+  function detectBang(q) {
+    q=(q||'').trim(); if(!q) return null;
+    let key,term;
+    const mPre=q.match(/^!(\w+)\s+(.+)$/), mPost=q.match(/^(.+)\s+!(\w+)\s*$/);
+    if(mPre){key=mPre[1];term=mPre[2];}
+    else if(mPost){key=mPost[2];term=mPost[1];}
+    else return null;
+    const tpl=BANGS[key.toLowerCase()];
+    return tpl ? { key:key.toLowerCase(), url:tpl.replace('%s',encodeURIComponent(term.trim())) } : null;
+  }
+  function updateBangChip() {
+    const d=detectBang(qInput.value||rqInput.value);
+    if(d){ bangChip.textContent=`!${d.key} → redirect`; bangChip.classList.add('visible'); }
+    else bangChip.classList.remove('visible');
+  }
+
+  const HIST_KEY='fathom:recent';
+  const loadRecent = () => { try { return JSON.parse(localStorage.getItem(HIST_KEY)||'[]'); } catch { return []; } };
+  function saveRecent(q) {
+    if(!q) return;
+    const cur=loadRecent().filter(x=>x!==q);
+    cur.unshift(q);
+    localStorage.setItem(HIST_KEY,JSON.stringify(cur.slice(0,8)));
+    renderRecent();
+  }
+  function renderRecent() {
+    const row=$('#recent-row'), recent=loadRecent();
+    if(!recent.length){ safeHTML(row,''); return; }
+    const tpl=`<span class="recent-label">recent</span>`+recent.map(q=>`
+      <a class="recent-chip" href="?q=${encodeURIComponent(q)}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        ${esc(q)}
+      </a>`).join('');
+    safeHTML(row,tpl);
+  }
+
+  function buildTabs() {
+    safeHTML(tabsR, CATEGORIES.map(c=>`<button class="r-tab" role="tab" data-cat="${c.id}" aria-selected="${c.id===state.cat}">${c.label}</button>`).join(''));
+    $$('[data-cat]',tabsHome).forEach(b=>b.setAttribute('aria-selected',b.dataset.cat===state.cat));
+    bindTabs(tabsHome); bindTabs(tabsR);
+  }
+  function bindTabs(w) {
+    $$('[data-cat]',w).forEach(b=>b.addEventListener('click',()=>{
+      state.cat=b.dataset.cat; state.page=1; syncTabs();
+      if(state.q) doSearch();
+    }));
+  }
+  function syncTabs() {
+    [tabsHome,tabsR].forEach(w=>$$('[data-cat]',w).forEach(b=>b.setAttribute('aria-selected',b.dataset.cat===state.cat)));
+  }
+
+  const suggestHome=$('#suggest'), suggestR=$('#r-suggest');
+  const fetchSuggest = debounce(async (q,target) => {
+    q=q.trim(); if(!q){ hideSuggest(target); return; }
+    try {
+      const res=await fetch(`${API}/autocomplete?q=${encodeURIComponent(q)}&format=json`);
+      if(!res.ok) throw 0;
+      const data=await res.json();
+      const arr=Array.isArray(data)?(data[1]||[]):(data.suggestions||[]);
+      renderSuggest(q,arr,target);
+    } catch { hideSuggest(target); }
+  },140);
+
+  function sugItem(text,q,isRecent=false) {
+    const icon = isRecent
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
+    return `<div class="suggest-item" data-q="${eattr(text)}" role="option">${icon}<span class="sug-text">${highlight(text,q)}</span></div>`;
+  }
+  function renderSuggest(q,arr,target) {
+    const el=target==='home'?suggestHome:suggestR;
+    const recent=loadRecent().filter(r=>r.toLowerCase().includes(q.toLowerCase())&&r!==q).slice(0,3);
+    const filtered=arr.filter(s=>s.toLowerCase()!==q.toLowerCase()).slice(0,8);
+    if(!filtered.length&&!recent.length){ hideSuggest(target); return; }
+    let tpl='';
+    if(recent.length) tpl+=`<div class="suggest-group"><div class="suggest-label">recent</div>${recent.map(r=>sugItem(r,q,true)).join('')}</div>`;
+    if(filtered.length) tpl+=`<div class="suggest-group"><div class="suggest-label">suggestions</div>${filtered.map(s=>sugItem(s,q)).join('')}</div>`;
+    safeHTML(el,tpl); el.classList.add('visible'); bindSuggest(el);
+  }
+  function bindSuggest(el) {
+    $$('.suggest-item',el).forEach(item=>item.addEventListener('mousedown',e=>{
+      e.preventDefault(); setQuery(item.dataset.q); state.page=1; doSearch();
+    }));
+  }
+  function hideSuggest(t){ (t==='home'?suggestHome:suggestR).classList.remove('visible'); }
+  const hideAllSuggest=()=>{hideSuggest('home');hideSuggest('r');};
+
+  function setQuery(q){ state.q=q; qInput.value=q; rqInput.value=q; updateBangChip(); }
+  function pushUrl() {
+    const p=new URLSearchParams();
+    if(state.q) p.set('q',state.q);
+    if(state.cat!=='general') p.set('cat',state.cat);
+    if(state.page>1) p.set('p',state.page);
+    if(state.time) p.set('time',state.time);
+    if(state.lang) p.set('lang',state.lang);
+    if(state.safe!=='1') p.set('safe',state.safe);
+    history.pushState(null,'',p.toString()?'?'+p:'/');
+  }
+  function loadFromUrl() {
+    const p=new URLSearchParams(location.search), q=p.get('q')||'';
+    if(q){
+      state.q=q;
+      state.cat=p.get('cat')||'general';
+      state.page=parseInt(p.get('p'))||1;
+      state.time=p.get('time')||'';
+      state.lang=p.get('lang')||'';
+      state.safe=p.get('safe')||'1';
+      qInput.value=q; rqInput.value=q;
+      syncTabs(); syncFilters();
+      doSearch(false);
+    } else goHome(false);
+  }
+  function goHome(push=true) {
+    home.style.display='flex'; results.classList.remove('visible');
+    qInput.value=''; state.q=''; state.page=1;
+    hideAllSuggest(); renderRecent();
+    const em = $('#entity-card-mount'); if (em) safeHTML(em, '');
+    if(push) history.pushState(null,'','/');
+    requestAnimationFrame(()=>qInput.focus());
+  }
+
+  // ═══════════════════════════════════════════════
+  // MAP — direct Nominatim + Overpass integration.
+  // SearXNG's map category just wraps Nominatim search (geocode-only). This path
+  // detects POI keywords and routes them to Overpass with radius/bbox for real
+  // "coffee near me" / "pizza in brooklyn" results.
+  // Nominatim usage policy: <https://operations.osmfoundation.org/policies/nominatim/>
+  // For heavy traffic, self-host or use a paid provider.
+  // ═══════════════════════════════════════════════
+  const POI_TAGS = {
+    coffee:['amenity=cafe'], cafe:['amenity=cafe'], 'café':['amenity=cafe'],
+    restaurant:['amenity=restaurant'], food:['amenity=restaurant','amenity=fast_food'],
+    pizza:['cuisine=pizza'], sushi:['cuisine=sushi'], burger:['cuisine=burger'],
+    mexican:['cuisine=mexican'], chinese:['cuisine=chinese'], thai:['cuisine=thai'],
+    indian:['cuisine=indian'], italian:['cuisine=italian'], japanese:['cuisine=japanese'],
+    korean:['cuisine=korean'], breakfast:['cuisine=breakfast'], brunch:['cuisine=breakfast'],
+    bakery:['shop=bakery'], bar:['amenity=bar'], pub:['amenity=pub'],
+    brewery:['craft=brewery','industrial=brewery'],
+    gas:['amenity=fuel'], fuel:['amenity=fuel'], 'gas station':['amenity=fuel'],
+    ev:['amenity=charging_station'], charging:['amenity=charging_station'],
+    pharmacy:['amenity=pharmacy'], drugstore:['amenity=pharmacy'],
+    hospital:['amenity=hospital'], doctor:['amenity=doctors'], dentist:['amenity=dentist'], clinic:['amenity=clinic'],
+    hotel:['tourism=hotel'], motel:['tourism=motel'], hostel:['tourism=hostel'],
+    bank:['amenity=bank'], atm:['amenity=atm'],
+    grocery:['shop=supermarket','shop=convenience','shop=grocery'],
+    supermarket:['shop=supermarket'], convenience:['shop=convenience'],
+    park:['leisure=park'], playground:['leisure=playground'],
+    gym:['leisure=fitness_centre','sport=fitness'],
+    library:['amenity=library'], school:['amenity=school'], university:['amenity=university'],
+    parking:['amenity=parking'], airport:['aeroway=aerodrome'],
+    train:['railway=station'], 'train station':['railway=station'],
+    subway:['station=subway'], metro:['station=subway'],
+    'bus station':['amenity=bus_station'], 'bus stop':['highway=bus_stop'],
+    cinema:['amenity=cinema'], theatre:['amenity=theatre'], theater:['amenity=theatre'],
+    museum:['tourism=museum'], bookstore:['shop=books'],
+    'post office':['amenity=post_office'], police:['amenity=police'], 'fire station':['amenity=fire_station'],
+    church:['amenity=place_of_worship'], beach:['natural=beach'],
+    laundry:['shop=laundry'], 'car wash':['amenity=car_wash'], 'car rental':['amenity=car_rental'],
+    hardware:['shop=hardware'], clothes:['shop=clothes'],
+    salon:['shop=hairdresser','shop=beauty'], barber:['shop=hairdresser'],
+    // cuisines & food specifics
+    hibachi:['cuisine=japanese'], ramen:['cuisine=ramen','cuisine=japanese'], noodle:['cuisine=noodle'],
+    steakhouse:['cuisine=steak_house'], steak:['cuisine=steak_house'],
+    deli:['shop=deli'], diner:['amenity=restaurant'],
+    taco:['cuisine=mexican'], bbq:['cuisine=barbecue'], barbecue:['cuisine=barbecue'],
+    vegan:['diet:vegan=yes'], vegetarian:['diet:vegetarian=yes'],
+    seafood:['cuisine=seafood'], greek:['cuisine=greek'], mediterranean:['cuisine=mediterranean'],
+    vietnamese:['cuisine=vietnamese'], french:['cuisine=french'], american:['cuisine=american'],
+    ethiopian:['cuisine=ethiopian'], turkish:['cuisine=turkish'], lebanese:['cuisine=lebanese'],
+    'ice cream':['amenity=ice_cream'], donut:['cuisine=donut'], doughnut:['cuisine=donut'],
+    dessert:['cuisine=dessert'], chocolate:['shop=chocolate'],
+    tea:['cuisine=tea'], boba:['cuisine=bubble_tea'], 'bubble tea':['cuisine=bubble_tea'],
+  };
+
+  function matchPoi(phrase) {
+    const sorted=Object.keys(POI_TAGS).sort((a,b)=>b.length-a.length);
+    for (const kw of sorted) {
+      const re=new RegExp('\\b'+kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'s?\\b','i');
+      if (re.test(phrase)) return { keyword:kw, tags:POI_TAGS[kw] };
+    }
+    return null;
+  }
+
+  function parseMapQuery(q) {
+    q=(q||'').trim(); if(!q) return null;
+    const nearMe=q.match(/^(.+?)\s+near\s+(?:me|here)\s*$/i);
+    const inPlace=q.match(/^(.+?)\s+(?:in|near|around|by)\s+(.+?)\s*$/i);
+    if (nearMe)  return { category:nearMe[1].trim(),  place:null,                 nearMe:true  };
+    if (inPlace) return { category:inPlace[1].trim(), place:inPlace[2].trim(),    nearMe:false };
+    return              { category:q,                 place:null,                 nearMe:false };
+  }
+
+  async function nominatimSearch(q, opts={}) {
+    const p=new URLSearchParams({ q, format:'jsonv2', limit:String(opts.limit||15), addressdetails:'1' });
+    if (opts.viewbox) { p.set('viewbox', opts.viewbox); if (opts.bounded) p.set('bounded','1'); }
+    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),12000);
+    try {
+      const res=await fetch(`https://nominatim.openstreetmap.org/search?${p}`,{ headers:{'Accept':'application/json'}, signal:ctrl.signal });
+      if(!res.ok) throw new Error(`nominatim ${res.status}`);
+      return res.json();
+    } finally { clearTimeout(t); }
+  }
+
+  async function overpassQuery(body) {
+    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),45000);
+    try {
+      const res=await fetch('https://overpass-api.de/api/interpreter',{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'data='+encodeURIComponent(body),
+        signal:ctrl.signal,
+      });
+      if(!res.ok) throw new Error(`overpass ${res.status}`);
+      return res.json();
+    } finally { clearTimeout(t); }
+  }
+
+  // ─── geo math ────────────────────────────────────────────────
+  function haversineKm(a, b) {
+    const R = 6371, toRad = d => d * Math.PI / 180;
+    const dLat = toRad(b[0]-a[0]), dLng = toRad(b[1]-a[1]);
+    const s = Math.sin(dLat/2)**2 + Math.cos(toRad(a[0]))*Math.cos(toRad(b[0]))*Math.sin(dLng/2)**2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+  function formatDistance(km) {
+    if (km == null) return '';
+    const mi = km * 0.621371;
+    if (mi < 0.1) return `${Math.round(mi * 5280)} ft`;
+    if (mi < 10)  return `${mi.toFixed(1)} mi`;
+    return `${Math.round(mi)} mi`;
+  }
+
+  // ─── Overpass query builder — unified ───────────────────────
+  // Always matches the phrase against name/brand/operator/aliases, AND if the
+  // phrase maps to known OSM tags (e.g. "coffee" → amenity=cafe), adds those as
+  // a union. This catches both specific places ("Burger King") and generic
+  // categories ("coffee") without either path shadowing the other.
+  function buildOverpassQuery(phrase, scope) {
+    const safe = phrase.replace(/["\\]/g, '').trim();
+    if (!safe) return null;
+    const scopeStr = scope.kind === 'radius'
+      ? `(around:${scope.radius},${scope.center[0]},${scope.center[1]})`
+      : `(${scope.bbox[0]},${scope.bbox[1]},${scope.bbox[2]},${scope.bbox[3]})`;
+    const parts = [];
+    // specific match: name/brand/operator regex (case-insensitive)
+    for (const f of ['name','name:en','brand','brand:en','operator','alt_name','short_name']) {
+      parts.push(`nwr["${f}"~"${safe}",i]${scopeStr};`);
+    }
+    // category match: add canonical tags when the phrase is a known POI keyword
+    const poi = matchPoi(safe);
+    if (poi) for (const t of poi.tags) {
+      const i = t.indexOf('=');
+      const k = i === -1 ? t : t.slice(0, i);
+      const v = i === -1 ? null : t.slice(i + 1);
+      parts.push(v ? `nwr["${k}"="${v}"]${scopeStr};` : `nwr["${k}"]${scopeStr};`);
+    }
+    return `[out:json][timeout:40];(${parts.join('')});out center tags 150;`;
+  }
+
+  function dedupeOsm(elements) {
+    const seen = new Set(), out = [];
+    for (const el of elements) {
+      const k = `${el.type}/${el.id}`;
+      if (seen.has(k)) continue;
+      seen.add(k); out.push(el);
+    }
+    return out;
+  }
+
+  function normalizeOverpass(elements, origin) {
+    return elements.map(el => {
+      const lat = el.lat ?? el.center?.lat;
+      const lng = el.lon ?? el.center?.lon;
+      if (lat == null || lng == null) return null;
+      const t = el.tags || {};
+      const kind = (t.amenity||t.shop||t.tourism||t.leisure||t.aeroway||t.railway||t.cuisine||t.craft||'').replace(/_/g,' ');
+      const title = t.name || t.brand || t.operator || (kind ? kind[0].toUpperCase()+kind.slice(1) : 'Unnamed place');
+      const subtitle = (t.brand && t.name && t.brand !== t.name) ? t.brand
+                     : (t.name && kind) ? kind
+                     : '';
+      const addrParts = [
+        [t['addr:housenumber'], t['addr:street']].filter(Boolean).join(' '),
+        t['addr:city'],
+        t['addr:postcode'],
+      ].filter(Boolean);
+      const snippet = [
+        t.cuisine && `cuisine: ${t.cuisine.replace(/;/g,', ')}`,
+        t.opening_hours && `hours: ${t.opening_hours}`,
+        t.phone,
+        t.website && `web: ${t.website.replace(/^https?:\/\//,'').replace(/\/$/,'')}`,
+      ].filter(Boolean).join(' · ');
+      const distance_km = origin ? haversineKm(origin, [lat, lng]) : null;
+      return {
+        title,
+        subtitle,
+        url: `https://www.openstreetmap.org/${el.type}/${el.id}`,
+        latitude: lat,
+        longitude: lng,
+        address_name: addrParts.join(', '),
+        content: snippet,
+        distance_km,
+        engine: 'overpass',
+      };
+    }).filter(Boolean);
+  }
+
+  function normalizeNominatim(arr, origin) {
+    return arr.map(r=>{
+      const parts = (r.display_name||'').split(',').map(s=>s.trim());
+      const lat = +r.lat, lng = +r.lon;
+      return {
+        title: r.name || parts[0],
+        subtitle: r.type ? String(r.type).replace(/_/g,' ') : '',
+        url: `https://www.openstreetmap.org/${r.osm_type}/${r.osm_id}`,
+        latitude: lat,
+        longitude: lng,
+        address_name: parts.slice(1).join(', '),
+        boundingbox: r.boundingbox,
+        distance_km: origin ? haversineKm(origin, [lat, lng]) : null,
+        engine: 'nominatim',
+      };
+    });
+  }
+
+  async function searchAround(phrase, scope) {
+    const q = buildOverpassQuery(phrase, scope);
+    if (!q) return [];
+    try {
+      const data = await overpassQuery(q);
+      const deduped = dedupeOsm(data.elements || []);
+      const origin = scope.kind === 'radius' ? scope.center : null;
+      return normalizeOverpass(deduped, origin);
+    } catch { return []; }
+  }
+
+  // Convert a radius in meters to a Nominatim viewbox around a center.
+  function radiusToViewbox(center, radiusMeters) {
+    const latDeg = radiusMeters / 111000;
+    const lngDeg = radiusMeters / (111000 * Math.max(0.1, Math.cos(center[0] * Math.PI / 180)));
+    // viewbox: lon_left, lat_top, lon_right, lat_bottom
+    return `${center[1] - lngDeg},${center[0] + latDeg},${center[1] + lngDeg},${center[0] - latDeg}`;
+  }
+
+  // Merge results from Overpass + Nominatim. Dedupe by (lat,lng,title) and
+  // fill missing fields between sources so we keep the best info of each.
+  function mergeResults(primary, secondary, origin) {
+    const key = r => `${(+r.latitude).toFixed(4)}|${(+r.longitude).toFixed(4)}|${(r.title||'').toLowerCase().slice(0,40)}`;
+    const map = new Map();
+    for (const r of primary)   map.set(key(r), r);
+    for (const r of secondary) {
+      const k = key(r), existing = map.get(k);
+      if (existing) {
+        existing.address_name = existing.address_name || r.address_name;
+        existing.content      = existing.content      || r.content;
+        existing.subtitle     = existing.subtitle     || r.subtitle;
+        existing.boundingbox  = existing.boundingbox  || r.boundingbox;
+      } else {
+        map.set(k, r);
+      }
+    }
+    const out = [...map.values()];
+    if (origin) out.sort((x, y) => (x.distance_km ?? 1e9) - (y.distance_km ?? 1e9));
+    return out;
+  }
+
+  // Hybrid search: Overpass (tags/brand) + Nominatim (name/chain) in parallel.
+  // Default range ≈ 40 miles (64 km), widening to ~100 mi only if nothing came back.
+  // All results are distance-sorted (nearest first); displayed list is capped at 100.
+  const MAX_DISPLAY = 100;
+  async function searchWithWidening(phrase, center) {
+    const radii = [64000, 160000]; // ~40 mi, ~100 mi fallback
+    let last = { results:[], radius:radii[radii.length-1], widened:true };
+    for (let i = 0; i < radii.length; i++) {
+      const r = radii[i];
+      const viewbox = radiusToViewbox(center, r);
+      const [opRes, nomRes] = await Promise.all([
+        searchAround(phrase, { kind:'radius', center, radius:r }),
+        nominatimSearch(phrase, { viewbox, bounded:true, limit:40 })
+          .then(arr => normalizeNominatim(arr, center))
+          .catch(() => []),
+      ]);
+      // trim Nominatim hits that landed outside the actual radius (viewbox is a square)
+      const nomFiltered = nomRes.filter(x => x.distance_km == null || x.distance_km * 1000 <= r);
+      const merged = mergeResults(opRes, nomFiltered, center).slice(0, MAX_DISPLAY);
+      last = { results: merged, radius: r, widened: i > 0 };
+      if (merged.length > 0) return last;
+    }
+    return last;
+  }
+
+  async function autoGeolocate() {
+    if (state.geo || !navigator.geolocation) return state.geo;
+    if (state.geoDenied) return null; // don't re-prompt once the user has declined
+    try {
+      state.geo = await new Promise((resolve,reject)=>{
+        navigator.geolocation.getCurrentPosition(
+          p => resolve({ lat:p.coords.latitude, lng:p.coords.longitude }),
+          reject,
+          { timeout:8000, maximumAge:60000 }
+        );
+      });
+      state.nearMe = true; state.geoDenied = false;
+      const { lat, lng } = state.geo;
+      $('#coord').textContent = `${Math.abs(lat).toFixed(2)}°${lat>=0?'N':'S'}  ${Math.abs(lng).toFixed(2)}°${lng>=0?'E':'W'}`;
+    } catch {
+      state.geoDenied = true;
+    }
+    return state.geo;
+  }
+
+  // ─── main map-search orchestrator ─────────────────────────────
+  async function searchMap() {
+    const parsed = parseMapQuery(state.q);
+    if (!parsed) return { results:[], number_of_results:0 };
+    const { category, place } = parsed;
+
+    // Auto-prompt geolocation on every map search unless previously denied.
+    if (!state.geo && !state.geoDenied) await autoGeolocate();
+
+    // 1) Explicit "<q> in <place>" → geocode place, run hybrid search in its bbox.
+    if (place) {
+      const geo = await nominatimSearch(place, { limit:1 });
+      if (!geo.length) {
+        return { results:[], number_of_results:0, fathom_note:`couldn't locate "${place}"`, engine_source:'nominatim' };
+      }
+      const g = geo[0];
+      const [s,n,w,e] = g.boundingbox.map(Number);
+      const where = (g.display_name||'').split(',').slice(0,2).join(', ').trim();
+      const bboxCenter = [(s+n)/2, (w+e)/2];
+      const origin = state.geo ? [state.geo.lat, state.geo.lng] : bboxCenter;
+      const [opRes, nomRes] = await Promise.all([
+        searchAround(category, { kind:'bbox', bbox:[s,w,n,e] }),
+        nominatimSearch(category, { viewbox:`${w},${n},${e},${s}`, bounded:true, limit:20 })
+          .then(arr => normalizeNominatim(arr, origin))
+          .catch(() => []),
+      ]);
+      // Overpass bbox search doesn't attach distance; add it if we have an origin.
+      if (origin) opRes.forEach(r => { r.distance_km = haversineKm(origin, [r.latitude, r.longitude]); });
+      const merged = mergeResults(opRes, nomRes, origin);
+      return {
+        results: merged,
+        number_of_results: merged.length,
+        fathom_note: merged.length ? `${merged.length} result${merged.length===1?'':'s'} for "${category}" in ${where}` : `no results for "${category}" in ${where}`,
+        engine_source: 'hybrid · bbox',
+        scope_bbox: [s,n,w,e],
+      };
+    }
+
+    // 2) Have user location → radius search with auto-widening (2.5 → 10 → 50 km).
+    if (state.geo) {
+      const { results, radius, widened } = await searchWithWidening(category, [state.geo.lat, state.geo.lng]);
+      if (results.length) {
+        const note = widened
+          ? `showing within ${formatDistance(radius/1000)} (nothing closer)`
+          : `${results.length} result${results.length===1?'':'s'} within ${formatDistance(radius/1000)} of you`;
+        return { results, number_of_results:results.length, fathom_note:note, engine_source:'overpass · radius', search_radius_m:radius };
+      }
+      // Nothing nearby even at 50 km — try a global Nominatim geocode (e.g. "Eiffel Tower")
+      const nom = await nominatimSearch(state.q, { limit:15 });
+      if (nom.length) {
+        return { results:normalizeNominatim(nom, [state.geo.lat,state.geo.lng]), number_of_results:nom.length, fathom_note:`nothing nearby — showing worldwide matches`, engine_source:'nominatim · geocode' };
+      }
+      return { results:[], number_of_results:0, fathom_note:`no results for "${state.q}"`, engine_source:'overpass' };
+    }
+
+    // 3) No location and user didn't specify a place. If it looks like a landmark/address
+    //    Nominatim can usually find it. If nothing returns, prompt for location.
+    const nom = await nominatimSearch(state.q, { limit:15 });
+    if (nom.length) {
+      return { results:normalizeNominatim(nom), number_of_results:nom.length, engine_source:'nominatim · geocode' };
+    }
+    return {
+      results:[], number_of_results:0,
+      fathom_prompt: `No global matches for "${state.q}". Share your location to search nearby, or try "${state.q} in <city>".`,
+      engine_source:'prompt',
+    };
+  }
+
+  async function doSearch(push=true) {
+    const bang=detectBang(state.q);
+    if(bang){ window.location.href=bang.url; return; }
+    saveRecent(state.q);
+    showResults();
+    if(push) pushUrl();
+    rqInput.value=state.q;
+
+    // Entity-card router (Phase 2b.2): async, fire-and-forget so the SearXNG fetch
+    // below starts immediately. A search-id stamp guards against stale renders when
+    // the user fires off a new query before the previous one's detectors finish.
+    const entityMount = $('#entity-card-mount');
+    if (entityMount) {
+      safeHTML(entityMount, '');                    // clear previous card
+      const myId = ++state.entitySearchId;
+      entityMount.dataset.searchId = String(myId);
+      // Skip detection entirely if this query was dismissed earlier this session.
+      if (isCardDismissed(state.q)) {
+        // Leave mount empty — results render below as usual.
+      } else {
+        (async () => {
+          try {
+            const intent = await detectIntent(state.q);
+            if (entityMount.dataset.searchId !== String(myId)) return;  // superseded
+            await renderEntityCard(intent, entityMount);
+          } catch (e) { /* never let a card crash the search */ }
+        })();
+      }
+    }
+
+    safeHTML(mainEl,`<div class="loading" role="status" aria-live="polite"><div class="sonar"><span></span></div><span>scanning depths…</span></div>`);
+    sideEl.hidden=true; bodyEl.classList.remove('has-side');
+    mainEl.classList.toggle('wide', state.cat==='map'||state.cat==='images');
+
+    // Map uses OSM APIs directly for real POI / radius search.
+    if (state.cat === 'map') {
+      try {
+        state.mapDisplayCount = MAP_PAGE_SIZE; // reset paging for every new query
+        const data = await searchMap();
+        state.lastData = data;
+        state.lastResults = data.results || [];
+        render(data);
+      } catch(err) {
+        safeHTML(mainEl,`<div class="error"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="empty-title">map service lost</div><div class="empty-sub">// ${esc(err.message)}</div></div>`);
+      }
+      return;
+    }
+
+    const params=new URLSearchParams({q:state.q,categories:state.cat,format:'json',pageno:state.page,safesearch:state.safe});
+    if(state.time) params.set('time_range',state.time);
+    if(state.lang) params.set('language',state.lang);
+
+    try {
+      const res=await fetch(`${API}/search?${params}`);
+      if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const data=await res.json();
+      state.lastData=data; state.lastResults=data.results||[];
+      render(data);
+    } catch(err) {
+      safeHTML(mainEl,`<div class="error"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="empty-title">transmission lost</div><div class="empty-sub">// ${esc(err.message)}</div></div>`);
+    }
+  }
+  function showResults(){ home.style.display='none'; results.classList.add('visible'); document.documentElement.scrollTop=0; }
+
+  function render(data) {
+    const results=data.results||[], total=data.number_of_results||results.length;
+    let tpl='';
+    if(data.answers?.length) tpl+=renderAnswers(data.answers);
+    if(data.corrections?.length) tpl+=`<div class="correction">Did you mean <strong data-q="${eattr(data.corrections[0])}">${esc(data.corrections[0])}</strong>?</div>`;
+    if (state.cat === 'map') {
+      tpl+=`<div class="r-meta">
+        <span>${total.toLocaleString()} place${total===1?'':'s'}</span>
+        ${data.fathom_note?`<span class="sep">//</span><span>${esc(data.fathom_note)}</span>`:''}
+        <span class="sep">//</span>
+        <span>${esc(data.engine_source||'osm')}</span>
+      </div>`;
+    } else {
+      tpl+=`<div class="r-meta">
+        <span>${total.toLocaleString()} signals</span>
+        <span class="sep">//</span>
+        <span class="depth">depth <span class="depth-bar"><span class="depth-fill" style="width:${Math.min(state.page*8,100)}%"></span></span><span>${state.page*10}m</span></span>
+        <span class="sep">//</span>
+        <span>${data.unresponsive_engines?.length?data.unresponsive_engines.length+' offline':'all engines online'}</span>
+      </div>`;
+    }
+    if(!results.length){
+      if (state.cat==='map' && data.fathom_prompt) tpl+=renderLocationPrompt(data.fathom_prompt);
+      else tpl+=renderEmpty();
+      safeHTML(mainEl,tpl);
+      wireResults();
+      return;
+    }
+    if(state.cat==='images') tpl+=renderImages(results);
+    else if(state.cat==='news') tpl+=renderNews(results);
+    else if(state.cat==='videos') tpl+=renderVideos(results);
+    else if(state.cat==='map') tpl+=renderMap(results);
+    else tpl+=renderWeb(results);
+    if(state.cat!=='map') tpl+=renderPagination();
+    if(data.suggestions?.length) tpl+=renderRelated(data.suggestions);
+    safeHTML(mainEl,tpl);
+    if(data.infoboxes?.length&&state.cat==='general') {
+      sideEl.hidden=false; bodyEl.classList.add('has-side'); mainEl.classList.remove('wide');
+      safeHTML(sideEl, data.infoboxes.slice(0,2).map(renderInfobox).join(''));
+    }
+    wireResults();
+    if(state.cat==='map') initMap(results, data);
+  }
+
+  function wireResults() {
+    $$('.page-btn[data-page]',mainEl).forEach(b=>b.addEventListener('click',()=>{
+      state.page=parseInt(b.dataset.page); doSearch(); window.scrollTo({top:0,behavior:'smooth'});
+    }));
+    $$('strong[data-q]',mainEl).forEach(s=>s.addEventListener('click',()=>{ setQuery(s.dataset.q); state.page=1; doSearch(); }));
+    $$('.related-item[data-q]',mainEl).forEach(r=>r.addEventListener('click',e=>{ e.preventDefault(); setQuery(r.dataset.q); state.page=1; doSearch(); }));
+    const locBtn=$('#prompt-locate',mainEl);
+    if (locBtn) locBtn.addEventListener('click', async () => {
+      showToast('locating…');
+      await autoGeolocate();
+      if (state.geo) { showToast('location locked'); if (state.q) doSearch(); }
+      else showToast('location denied');
+    });
+    $$('.img-tile',mainEl).forEach((t,i)=>t.addEventListener('click',()=>openLightbox(i)));
+    $$('.wr-favicon img',mainEl).forEach(img=>img.addEventListener('error',()=>{
+      const fb=img.nextElementSibling; img.style.display='none'; if(fb) fb.style.display='block';
+    }));
+    const io = 'IntersectionObserver' in window && new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          const img=e.target; img.src=img.dataset.src;
+          img.addEventListener('load',()=>img.closest('.img-tile')?.classList.remove('loading'),{once:true});
+          img.addEventListener('error',()=>img.closest('.img-tile')?.remove(),{once:true});
+          io.unobserve(img);
+        }
+      });
+    },{rootMargin:'200px'});
+    if(io) $$('img[data-src]',mainEl).forEach(img=>io.observe(img));
+    else $$('img[data-src]',mainEl).forEach(img=>{ img.src=img.dataset.src; });
+  }
+
+  function renderAnswers(a) {
+    const x=a[0], text=typeof x==='string'?x:(x.answer||x.url||'');
+    return `<div class="answer-card" role="region" aria-label="Direct answer"><div class="answer-label">// instant answer</div><div class="answer-value">${esc(text)}</div></div>`;
+  }
+
+  function renderWeb(results) {
+    return results.map(r=>{
+      const {host,parts}=prettyUrl(r.url);
+      const crumb=parts.length?`<span class="wr-sep">›</span>${parts.map(p=>esc(decodeURIComponent(p))).join(' <span class="wr-sep">›</span> ')}`:'';
+      const fav=faviconUrl(r.url), letter=host?host[0].toUpperCase():'?';
+      return `<article class="web-result">
+        <header class="wr-head">
+          <div class="wr-favicon">${fav?`<img src="${eattr(fav)}" alt="" loading="lazy">`:''}<span class="wr-fav-fallback" style="${fav?'display:none':''}">${esc(letter)}</span></div>
+          <div class="wr-url"><span class="wr-host">${esc(host)}</span>${crumb}</div>
+        </header>
+        <a class="wr-title-link" href="${eattr(r.url)}" target="_blank" rel="noopener"><h3 class="wr-title">${esc(r.title||r.url)}</h3></a>
+        ${r.content?`<p class="wr-snippet">${highlight(r.content,state.q)}</p>`:''}
+        <div class="wr-foot">
+          ${r.engines?.length?`<span class="wr-engines">via ${esc(r.engines.slice(0,3).join(' · '))}</span>`:''}
+          <a class="wr-action" href="https://web.archive.org/web/*/${eattr(r.url)}" target="_blank" rel="noopener">cache</a>
+          <a class="wr-action" href="https://${eattr(host)}" target="_blank" rel="noopener">site</a>
+        </div>
+      </article>`;
+    }).join('');
+  }
+
+  function renderImages(results) {
+    const items=results.filter(r=>r.img_src||r.thumbnail_src||r.thumbnail);
+    if(!items.length) return renderEmpty();
+    return `<div class="img-grid">${items.map((r,i)=>{
+      const src=r.thumbnail_src||r.thumbnail||r.img_src;
+      return `<figure class="img-tile loading" data-idx="${i}"><img data-src="${eattr(src)}" alt="${eattr(r.title||'')}" loading="lazy"><figcaption class="img-meta">${esc(r.title||hostOf(r.url))}</figcaption></figure>`;
+    }).join('')}</div>`;
+  }
+
+  function renderNews(results) {
+    return results.map(r=>{
+      const src=hostOf(r.url), thumb=r.thumbnail||r.img_src;
+      return `<article class="news-row">
+        <div class="news-body">
+          <div class="news-kicker"><span>${esc(r.engine||src||'')}</span>${r.publishedDate?`<span class="dot">//</span><span class="date">${esc(fmtDate(r.publishedDate))}</span>`:''}</div>
+          <a class="news-title-link" href="${eattr(r.url)}" target="_blank" rel="noopener"><h3 class="news-title">${esc(r.title||r.url)}</h3></a>
+          ${r.content?`<p class="news-snippet">${highlight(r.content.slice(0,240),state.q)}</p>`:''}
+        </div>
+        <a class="news-thumb ${thumb?'':'empty'}" href="${eattr(r.url)}" target="_blank" rel="noopener">${thumb?`<img src="${eattr(thumb)}" alt="" loading="lazy">`:''}</a>
+      </article>`;
+    }).join('');
+  }
+
+  function renderVideos(results) {
+    return `<div class="video-grid">${results.map(r=>{
+      const thumb=r.thumbnail||r.img_src, dur=r.length||r.duration||'';
+      return `<article class="video-card">
+        <a class="video-thumb" href="${eattr(r.url)}" target="_blank" rel="noopener">${thumb?`<img src="${eattr(thumb)}" alt="" loading="lazy">`:''}<span class="video-play" aria-hidden="true"></span>${dur?`<span class="video-duration">${esc(dur)}</span>`:''}</a>
+        <a href="${eattr(r.url)}" target="_blank" rel="noopener"><h3 class="video-title">${esc(r.title||'')}</h3></a>
+        <div class="video-meta"><span>${esc(r.author||hostOf(r.url))}</span>${r.publishedDate?`<span class="dot">//</span><span>${esc(fmtDate(r.publishedDate))}</span>`:''}</div>
+      </article>`;
+    }).join('')}</div>`;
+  }
+
+  function renderMapListItems(pts) {
+    return pts.map((r, i) => {
+      const addr = r.address_name || (r.content||'').slice(0, 100);
+      const dirHref = `https://www.google.com/maps/dir/?api=1&destination=${r.latitude},${r.longitude}`;
+      return `<div class="map-item ${i===0?'active':''}" data-idx="${i}">
+        <div class="map-item-title">${esc(r.title||'')}</div>
+        ${r.subtitle ? `<div class="map-item-sub">${esc(r.subtitle)}</div>` : ''}
+        ${addr ? `<div class="map-item-addr">${esc(addr)}</div>` : ''}
+        ${r.content && !addr ? `<div class="map-item-addr">${esc(r.content.slice(0,100))}</div>` : ''}
+        <div class="map-item-foot">
+          ${r.distance_km != null ? `<span class="map-item-dist">${esc(formatDistance(r.distance_km))}</span>` : `<span class="map-item-coord">${(+r.latitude).toFixed(3)}°, ${(+r.longitude).toFixed(3)}°</span>`}
+          <a class="map-item-dir" href="${eattr(dirHref)}" target="_blank" rel="noopener" data-stop-propagation>directions →</a>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderMapListFooter(shownCount, totalCount) {
+    if (shownCount >= totalCount) {
+      return totalCount > MAP_PAGE_SIZE
+        ? `<div class="map-more"><div class="map-more-info">showing all ${totalCount}</div></div>`
+        : '';
+    }
+    const remaining = totalCount - shownCount;
+    const nextBatch = Math.min(MAP_PAGE_SIZE, remaining);
+    return `<div class="map-more">
+      <button class="map-more-btn" id="map-load-more">show ${nextBatch} more <span class="map-more-count">· ${remaining} remaining</span></button>
+      ${remaining > nextBatch ? `<button class="map-more-btn map-more-btn-alt" id="map-load-all">show all ${totalCount}</button>` : ''}
+    </div>`;
+  }
+
+  function renderMap(results) {
+    const pts = results.filter(r => Number.isFinite(+r.latitude) && Number.isFinite(+r.longitude));
+    if (!pts.length) return `<div class="empty"><div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div class="empty-title">no coordinates returned</div><div class="empty-sub">// try a more specific place name</div></div>`;
+    const shown = Math.min(state.mapDisplayCount || MAP_PAGE_SIZE, pts.length);
+    const visible = pts.slice(0, shown);
+    return `<div class="map-view">
+      <div class="map-list">
+        ${renderMapListItems(visible)}
+        ${renderMapListFooter(shown, pts.length)}
+      </div>
+      <div id="map-canvas"></div>
+    </div>`;
+  }
+
+  let mapInstance = null, mapMarkers = [], mapL = null;
+
+  function buildMarker(L, r, i) {
+    const lat = +r.latitude, lng = +r.longitude;
+    const pinSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40"><path d="M14 0C6.3 0 0 6.2 0 13.8c0 10.3 14 26.2 14 26.2s14-15.9 14-26.2C28 6.2 21.7 0 14 0z" fill="#5dd5f0" stroke="#03060b" stroke-width="1.5"/><circle cx="14" cy="14" r="4.5" fill="#03060b"/></svg>`;
+    const icon = L.divIcon({ html:pinSvg, className:'fathom-pin', iconSize:[28,40], iconAnchor:[14,40], popupAnchor:[0,-34] });
+    const m = L.marker([lat,lng], { icon, title:r.title||'' });
+    const addr = r.address_name || '';
+    const dirUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    const appleUrl = `https://maps.apple.com/?ll=${lat},${lng}&q=${encodeURIComponent(r.title||'')}`;
+    m.bindPopup(`
+      <div style="font-family:Fraunces,serif;font-size:1.08rem;color:#e5edf2;line-height:1.25;margin-bottom:0.25rem">${esc(r.title||'')}</div>
+      ${r.subtitle ? `<div style="font-size:0.72rem;color:#9eb0c0;text-transform:capitalize;margin-bottom:0.3rem">${esc(r.subtitle)}</div>` : ''}
+      ${addr ? `<div style="font-size:0.8rem;color:#9eb0c0;margin-bottom:0.4rem">${esc(addr)}</div>` : ''}
+      ${r.content ? `<div style="font-size:0.75rem;color:#9eb0c0;margin-bottom:0.5rem">${esc(r.content)}</div>` : ''}
+      ${r.distance_km != null ? `<div style="font-family:JetBrains Mono,monospace;font-size:0.68rem;color:#5dd5f0;letter-spacing:0.06em;margin-bottom:0.55rem">${esc(formatDistance(r.distance_km))} away</div>` : ''}
+      <div style="display:flex;flex-wrap:wrap;gap:0.6rem;font-family:JetBrains Mono,monospace;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em">
+        <a href="${eattr(dirUrl)}" target="_blank" rel="noopener" style="color:#5dd5f0">directions →</a>
+        <a href="${eattr(appleUrl)}" target="_blank" rel="noopener" style="color:#9eb0c0">apple maps</a>
+        <a href="${eattr(r.url)}" target="_blank" rel="noopener" style="color:#9eb0c0">osm ↗</a>
+      </div>
+    `);
+    m.on('click', () => {
+      $$('.map-item', mainEl).forEach(x => x.classList.remove('active'));
+      const item = mainEl.querySelector(`.map-item[data-idx="${i}"]`);
+      item?.classList.add('active'); item?.scrollIntoView({ block:'nearest' });
+    });
+    return m;
+  }
+
+  function wireMapList() {
+    $$('.map-item', mainEl).forEach(item => {
+      item.addEventListener('click', ev => {
+        if (ev.target.closest('[data-stop-propagation]') || ev.target.closest('a')) return;
+        const i = +item.dataset.idx;
+        $$('.map-item', mainEl).forEach(x => x.classList.remove('active'));
+        item.classList.add('active');
+        mapMarkers[i]?.openPopup();
+        mapInstance?.setView(mapMarkers[i].getLatLng(), Math.max(mapInstance.getZoom(), 15), { animate:true });
+      });
+      item.addEventListener('mouseenter', () => {
+        const i = +item.dataset.idx;
+        mapMarkers[i]?._icon?.classList.add('fathom-pin-hover');
+      });
+      item.addEventListener('mouseleave', () => {
+        const i = +item.dataset.idx;
+        mapMarkers[i]?._icon?.classList.remove('fathom-pin-hover');
+      });
+    });
+    const moreBtn = $('#map-load-more', mainEl);
+    if (moreBtn) moreBtn.addEventListener('click', () => onMapLoadMore(MAP_PAGE_SIZE));
+    const allBtn = $('#map-load-all', mainEl);
+    if (allBtn) allBtn.addEventListener('click', () => onMapLoadMore('all'));
+  }
+
+  async function initMap(results, data) {
+    const canvas = $('#map-canvas'); if (!canvas) return;
+    const L = await loadLeaflet();
+    if (!L) {
+      safeHTML(canvas, `<div style="padding:2rem;text-align:center;color:var(--fg-3);font-family:var(--mono);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase">// leaflet failed to load — check network</div>`);
+      return;
+    }
+    mapL = L;
+    const pts = results.filter(r => Number.isFinite(+r.latitude) && Number.isFinite(+r.longitude));
+    if (!pts.length) return;
+    if (mapInstance) { mapInstance.remove(); mapInstance = null; mapMarkers = []; }
+
+    await new Promise(r => requestAnimationFrame(r));
+
+    mapInstance = L.map(canvas, { zoomControl:true, attributionControl:true })
+                   .setView([+pts[0].latitude, +pts[0].longitude], 13);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png', {
+      subdomains: 'abcd',
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>',
+      maxZoom: 19,
+    }).addTo(mapInstance);
+
+    if (state.geo) {
+      const youIcon = L.divIcon({
+        html: `<span class="fathom-you-pulse"></span><span class="fathom-you-dot"></span>`,
+        className: 'fathom-you', iconSize: [20, 20], iconAnchor: [10, 10],
+      });
+      L.marker([state.geo.lat, state.geo.lng], { icon: youIcon, interactive: false, keyboard: false, zIndexOffset: 1000 }).addTo(mapInstance);
+      if (data?.search_radius_m) {
+        L.circle([state.geo.lat, state.geo.lng], {
+          radius: data.search_radius_m,
+          color: '#5dd5f0', weight: 1, opacity: 0.45,
+          fillColor: '#5dd5f0', fillOpacity: 0.04,
+          dashArray: '4,6', interactive: false,
+        }).addTo(mapInstance);
+      }
+    }
+
+    // Plot only the first N markers; "show more" reveals additional ones in place.
+    const shown = Math.min(state.mapDisplayCount || MAP_PAGE_SIZE, pts.length);
+    const bounds = L.latLngBounds();
+    if (state.geo) bounds.extend([state.geo.lat, state.geo.lng]);
+
+    for (let i = 0; i < shown; i++) {
+      const r = pts[i], lat = +r.latitude, lng = +r.longitude;
+      bounds.extend([lat, lng]);
+      if (Array.isArray(r.boundingbox) && r.boundingbox.length === 4) {
+        const [s,n,w,e] = r.boundingbox.map(Number);
+        if ([s,n,w,e].every(Number.isFinite)) bounds.extend([[s,w],[n,e]]);
+      }
+      const m = buildMarker(L, r, i).addTo(mapInstance);
+      mapMarkers.push(m);
+    }
+
+    if (bounds.isValid()) mapInstance.fitBounds(bounds, { padding:[40,40], maxZoom:16 });
+
+    setTimeout(() => mapInstance?.invalidateSize(), 0);
+    setTimeout(() => mapInstance?.invalidateSize(), 250);
+
+    wireMapList();
+  }
+
+  // Reveal the next batch (or all) without tearing the map down. Adds markers to
+  // the existing Leaflet instance and replaces only the list subtree in the DOM.
+  function onMapLoadMore(add) {
+    if (!mapInstance || !mapL || state.cat !== 'map') return;
+    const all = (state.lastResults || []).filter(r => Number.isFinite(+r.latitude) && Number.isFinite(+r.longitude));
+    const prev = state.mapDisplayCount;
+    const next = add === 'all' ? all.length : Math.min(all.length, prev + MAP_PAGE_SIZE);
+    state.mapDisplayCount = next;
+
+    // add new markers for the revealed range
+    for (let i = prev; i < next; i++) {
+      const m = buildMarker(mapL, all[i], i).addTo(mapInstance);
+      mapMarkers.push(m);
+    }
+
+    // refresh the list subtree in place (preserves map pan/zoom)
+    const listEl = $('.map-list', mainEl);
+    if (listEl) {
+      safeHTML(listEl, renderMapListItems(all.slice(0, next)) + renderMapListFooter(next, all.length));
+      wireMapList();
+    }
+  }
+  async function loadLeaflet() {
+    if (window.L) return window.L;
+    if (loadLeaflet._p) return loadLeaflet._p;
+    loadLeaflet._p = new Promise(resolve => {
+      const cssDone = new Promise(r => {
+        const css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';
+        css.crossOrigin = '';
+        css.onload = () => r(true);
+        css.onerror = () => r(false);
+        document.head.appendChild(css);
+      });
+      const jsDone = new Promise(r => {
+        const js = document.createElement('script');
+        js.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
+        js.crossOrigin = '';
+        js.onload = () => r(true);
+        js.onerror = () => r(false);
+        document.head.appendChild(js);
+      });
+      Promise.all([cssDone, jsDone]).then(([cssOk, jsOk]) => {
+        if (!jsOk) { console.error('[fathom] Leaflet JS failed to load'); resolve(null); return; }
+        if (!cssOk) console.warn('[fathom] Leaflet CSS failed to load — map may look broken');
+        resolve(window.L || null);
+      });
+    });
+    return loadLeaflet._p;
+  }
+
+  function renderInfobox(ib) {
+    const img=ib.img_src;
+    const attrs=(ib.attributes||[]).filter(a=>a.label&&a.value);
+    const urls=(ib.urls||[]).slice(0,6);
+    return `<div class="infobox">${img?`<img class="infobox-img" src="${eattr(img)}" alt="" loading="lazy">`:''}<div class="infobox-body"><h3 class="infobox-title">${esc(ib.infobox||ib.title||'')}</h3><div class="infobox-source">${esc(ib.engine||'wikipedia')}</div>${ib.content?`<p class="infobox-content">${esc(ib.content.slice(0,340))}${ib.content.length>340?'…':''}</p>`:''}${attrs.length?`<dl class="infobox-attrs">${attrs.slice(0,6).map(a=>`<div class="infobox-attr"><dt>${esc(a.label)}</dt><dd>${esc(a.value)}</dd></div>`).join('')}</dl>`:''}${urls.length?`<div class="infobox-links">${urls.map(u=>`<a class="infobox-link" href="${eattr(u.url||u)}" target="_blank" rel="noopener">${esc(u.title||hostOf(u.url||u))}</a>`).join('')}</div>`:''}</div></div>`;
+  }
+
+  function renderRelated(s) {
+    return `<div class="related"><div class="related-label">// related signals</div><div class="related-grid">${s.slice(0,10).map(x=>`<a class="related-item" data-q="${eattr(x)}" href="?q=${encodeURIComponent(x)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>${esc(x)}</a>`).join('')}</div></div>`;
+  }
+
+  function renderPagination() {
+    const cur=state.page, prev=cur>1, range=[];
+    for(let i=Math.max(1,cur-2); i<=cur+2; i++) range.push(i);
+    return `<nav class="pagination" aria-label="Pagination"><button class="page-btn" data-page="${cur-1}" ${!prev?'disabled':''}>← ascend</button>${range.map(p=>`<button class="page-btn" data-page="${p}" ${p===cur?'aria-current="page"':''}>${p}</button>`).join('')}<button class="page-btn" data-page="${cur+1}">dive deeper →</button></nav>`;
+  }
+
+  function renderEmpty() {
+    return `<div class="empty"><div class="empty-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="empty-title">no signals at this depth</div><div class="empty-sub">// try different coordinates</div></div>`;
+  }
+
+  function renderLocationPrompt(msg) {
+    return `<div class="empty">
+      <div class="empty-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M22 12h-3M5 12H2M19.07 4.93l-2.12 2.12M7.05 16.95l-2.12 2.12"/></svg></div>
+      <div class="empty-title">location needed</div>
+      <div class="empty-sub" style="text-transform:none;letter-spacing:0;font-family:var(--sans);color:var(--fg-2);font-size:0.95rem;max-width:440px;margin:0.5rem auto 1.2rem;line-height:1.5">${esc(msg)}</div>
+      <button id="prompt-locate" class="page-btn" style="color:var(--glow);border-color:var(--glow-3);padding:0.55rem 1.1rem">📍 share my location</button>
+    </div>`;
+  }
+
+  const lb=$('#lightbox'), lbImg=$('#lb-img'), lbTitle=$('#lb-title'), lbSrc=$('#lb-source'), lbCount=$('#lb-count'), lbOpen=$('#lb-open');
+  let lbIdx=0;
+  const imageItems=()=>(state.lastResults||[]).filter(r=>r.img_src||r.thumbnail_src||r.thumbnail);
+  function openLightbox(i){ lbIdx=i; renderLb(); lb.classList.add('visible'); document.body.style.overflow='hidden'; }
+  function renderLb() {
+    const items=imageItems(), it=items[lbIdx]; if(!it) return;
+    lbImg.src=it.img_src||it.thumbnail_src||it.thumbnail;
+    lbImg.alt=it.title||''; lbTitle.textContent=it.title||'';
+    lbSrc.textContent=it.url||''; lbSrc.href=it.url||'#';
+    lbOpen.href=it.img_src||it.url;
+    lbCount.textContent=`${lbIdx+1} / ${items.length}`;
+  }
+  function closeLb(){ lb.classList.remove('visible'); document.body.style.overflow=''; }
+  function nextLb(d) {
+    const items=imageItems(); if(!items.length) return;
+    lbIdx=(lbIdx+d+items.length)%items.length; renderLb();
+  }
+  $('#lb-close').addEventListener('click',closeLb);
+  $('#lb-prev').addEventListener('click',()=>nextLb(-1));
+  $('#lb-next').addEventListener('click',()=>nextLb(1));
+  $('#lb-copy').addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText(lbImg.src); showToast('URL copied'); } catch{ showToast('copy failed'); } });
+  lb.addEventListener('click',e=>{ if(e.target===lb) closeLb(); });
+
+  function syncFilters(){ $('#f-time').value=state.time; $('#f-lang').value=state.lang; $('#f-safe').value=state.safe; }
+  $('#f-time').addEventListener('change',e=>{ state.time=e.target.value; state.page=1; if(state.q) doSearch(); });
+  $('#f-lang').addEventListener('change',e=>{ state.lang=e.target.value; state.page=1; if(state.q) doSearch(); });
+  $('#f-safe').addEventListener('change',e=>{ state.safe=e.target.value; state.page=1; if(state.q) doSearch(); });
+
+  $('#near-me').addEventListener('click', async () => {
+    if (!navigator.geolocation) { showToast('no geolocation support'); return; }
+    showToast('locating…');
+    const prev = state.geo;
+    await autoGeolocate();
+    if (!state.geo) { showToast('location denied'); return; }
+    showToast(prev ? 'location refreshed' : 'location locked · try a map search');
+    if (state.cat === 'map' && state.q) doSearch();
+  });
+
+  function onInput(input,target) {
+    input.addEventListener('input',e=>{ state.q=e.target.value; fetchSuggest(e.target.value,target); updateBangChip(); });
+    input.addEventListener('focus',e=>{
+      if(e.target.value.trim()) fetchSuggest(e.target.value,target);
+      else if(target==='home') renderStartSuggestions();
+    });
+    input.addEventListener('blur',()=>setTimeout(()=>hideSuggest(target),120));
+    input.addEventListener('keydown',e=>handleInputKeys(e,target));
+  }
+  function renderStartSuggestions() {
+    const recent=loadRecent(); if(!recent.length) return;
+    safeHTML(suggestHome,`<div class="suggest-group"><div class="suggest-label">recent</div>${recent.slice(0,5).map(r=>sugItem(r,'',true)).join('')}</div>`);
+    suggestHome.classList.add('visible'); bindSuggest(suggestHome);
+  }
+  function handleInputKeys(e,target) {
+    const el=target==='home'?suggestHome:suggestR;
+    const items=$$('.suggest-item',el);
+    const curIdx=items.findIndex(i=>i.classList.contains('active'));
+    if(e.key==='Enter'&&curIdx>=0){
+      e.preventDefault(); setQuery(items[curIdx].dataset.q); state.page=1; doSearch(); hideAllSuggest(); return;
+    }
+    if(e.key==='Enter'){ state.q=e.target.value; state.page=1; doSearch(); hideAllSuggest(); return; }
+    if(e.key==='ArrowDown'||(e.key==='Tab'&&!e.shiftKey&&items.length)){
+      e.preventDefault(); items.forEach(i=>i.classList.remove('active'));
+      const n=items[Math.min(curIdx+1,items.length-1)];
+      if(n){ n.classList.add('active'); e.target.value=n.dataset.q; }
+    }
+    if(e.key==='ArrowUp'){
+      e.preventDefault(); items.forEach(i=>i.classList.remove('active'));
+      const n=items[Math.max(curIdx-1,0)];
+      if(n){ n.classList.add('active'); e.target.value=n.dataset.q; }
+    }
+    if(e.key==='Escape'){ hideSuggest(target); e.target.blur(); }
+  }
+  onInput(qInput,'home'); onInput(rqInput,'r');
+  $('#submit').addEventListener('click',()=>{ state.q=qInput.value; state.page=1; doSearch(); });
+  $('#r-submit').addEventListener('click',()=>{ state.q=rqInput.value; state.page=1; doSearch(); });
+  $('#r-logo').addEventListener('click',e=>{ e.preventDefault(); goHome(); });
+
+  const helpEl=$('#help');
+  const toggleHelp=()=>helpEl.classList.toggle('visible');
+  $('#help-btn').addEventListener('click',toggleHelp);
+  $('#help-btn-2').addEventListener('click',toggleHelp);
+  helpEl.addEventListener('click',e=>{ if(e.target===helpEl) helpEl.classList.remove('visible'); });
+  const inputActive=()=>{ const t=document.activeElement?.tagName; return t==='INPUT'||t==='TEXTAREA'||t==='SELECT'; };
+
+  window.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      if(lb.classList.contains('visible')){ closeLb(); return; }
+      if(helpEl.classList.contains('visible')){ helpEl.classList.remove('visible'); return; }
+      if(inputActive()){ document.activeElement.blur(); return; }
+    }
+    if(lb.classList.contains('visible')){
+      if(e.key==='ArrowLeft') nextLb(-1);
+      if(e.key==='ArrowRight') nextLb(1);
+      return;
+    }
+    if(inputActive()) return;
+    if(e.key==='/'||(e.key==='k'&&(e.metaKey||e.ctrlKey))){
+      e.preventDefault();
+      (results.classList.contains('visible')?rqInput:qInput).focus();
+      return;
+    }
+    if(e.key==='?'){ e.preventDefault(); toggleHelp(); return; }
+    if(e.key>='1'&&e.key<='9'){
+      const i=parseInt(e.key)-1;
+      if(CATEGORIES[i]){ state.cat=CATEGORIES[i].id; state.page=1; syncTabs(); if(state.q) doSearch(); }
+      return;
+    }
+    if(e.key==='g'){
+      e.preventDefault();
+      const follow=ev=>{ if(ev.key==='h') goHome(); window.removeEventListener('keydown',follow); };
+      window.addEventListener('keydown',follow);
+      return;
+    }
+    if(e.key==='n'){ e.preventDefault(); if(state.q){ state.page++; doSearch(); window.scrollTo(0,0); } }
+    if(e.key==='p'){ e.preventDefault(); if(state.q&&state.page>1){ state.page--; doSearch(); window.scrollTo(0,0); } }
+    if(e.key==='j'){ e.preventDefault(); focusResult(+1); }
+    if(e.key==='k'){ e.preventDefault(); focusResult(-1); }
+    if(e.key==='o'){
+      e.preventDefault();
+      const arr=$$('.wr-title-link, .news-title-link',mainEl);
+      if(arr[state.focusIdx]) arr[state.focusIdx].click();
+    }
+  });
+  function focusResult(d) {
+    const arr=$$('.web-result, .news-row, .video-card',mainEl);
+    if(!arr.length) return;
+    arr[state.focusIdx]?.style.removeProperty('outline');
+    state.focusIdx=Math.max(0,Math.min(arr.length-1,state.focusIdx+d));
+    const el=arr[state.focusIdx];
+    el.style.outline='2px solid var(--glow)'; el.style.outlineOffset='4px';
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+
+  function tickClock() {
+    const d=new Date(), pad=n=>String(n).padStart(2,'0');
+    $('#clock').textContent=`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} UTC`;
+  }
+  setInterval(tickClock,1000); tickClock();
+
+  window.addEventListener('popstate',loadFromUrl);
+  buildTabs(); renderRecent(); loadFromUrl();
+
+  // Universal close-X for entity cards. Observes the mount and stamps an X
+  // on any rendered .entity-card (handles lazy/multi-stage renders like music).
+  (() => {
+    const m = $('#entity-card-mount');
+    if (!m || !window.MutationObserver) return;
+    new MutationObserver(() => ensureCardCloseBtn(m)).observe(m, { childList:true, subtree:true });
+  })();
+  if(!state.q) setTimeout(()=>qInput.focus(),120);
+})();
+</script>
+</body>
+</html>
