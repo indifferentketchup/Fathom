@@ -1,0 +1,13 @@
+.git
+.env
+*.bak
+*.bak-*
+*.bak2-*
+*.bak3-*
+*.bak4-*
+*.log
+**/*.bak
+**/*.bak-*
+**/*.bak2-*
+**/*.bak3-*
+**/*.bak4-*
