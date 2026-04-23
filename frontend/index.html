@@ -1480,6 +1480,9 @@
     if (qLow === nLow) conf = 0.9;
     else if (nLow.length >= 3 && (nLow.includes(qLow) || qLow.includes(nLow))) conf = 0.85;
     else { cacheSet(key, null); return null; }
+    // Note: Spotify removed popularity/followers from non-user OAuth responses,
+    // so we can't downweight by play count anymore. Cross-detector tie-break in
+    // the router (music vs place) handles "Burger King" / "Apple" / etc.
 
     const result = { type:'music', data:{ spotify: top, query: s }, confidence: conf };
     cacheSet(key, result);
@@ -1619,6 +1622,13 @@
       .filter(r => r.status === 'fulfilled' && r.value)
       .map(r => r.value);
     if (!hits.length) return { type:'general', data:null, confidence:0 };
+    // Cross-detector tie-break: when MUSIC and PLACE both fire for the same query,
+    // the user almost always meant the place ("Burger King", "Apple", "McDonalds"
+    // are all real Spotify novelty artists). Downweight music when place agrees.
+    const hasPlace = hits.some(h => h.type === 'place');
+    if (hasPlace) {
+      hits.forEach(h => { if (h.type === 'music') h.confidence -= 0.3; });
+    }
     hits.sort((a, b) =>
       (b.confidence - a.confidence) ||
       (INTENT_PRIORITY.indexOf(a.type) - INTENT_PRIORITY.indexOf(b.type))
@@ -2652,16 +2662,14 @@
   function onInput(input,target) {
     input.addEventListener('input',e=>{ state.q=e.target.value; fetchSuggest(e.target.value,target); updateBangChip(); });
     input.addEventListener('focus',e=>{
+      // Only open the suggest dropdown once the user has actually typed something.
+      // On the home page the recent-search chips are already visible below the bar,
+      // so opening a dropdown of the same recents on empty-focus duplicated them
+      // and overlapped the category tabs on mobile.
       if(e.target.value.trim()) fetchSuggest(e.target.value,target);
-      else if(target==='home') renderStartSuggestions();
     });
     input.addEventListener('blur',()=>setTimeout(()=>hideSuggest(target),120));
     input.addEventListener('keydown',e=>handleInputKeys(e,target));
-  }
-  function renderStartSuggestions() {
-    const recent=loadRecent(); if(!recent.length) return;
-    safeHTML(suggestHome,`<div class="suggest-group"><div class="suggest-label">recent</div>${recent.slice(0,5).map(r=>sugItem(r,'',true)).join('')}</div>`);
-    suggestHome.classList.add('visible'); bindSuggest(suggestHome);
   }
   function handleInputKeys(e,target) {
     const el=target==='home'?suggestHome:suggestR;
