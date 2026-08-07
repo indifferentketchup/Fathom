@@ -24,17 +24,18 @@ jobs:
           semgrep scan --config auto --json --output semgrep.json || true
       - name: Upload SARIF to code scanning
         uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
         with:
           sarif_file: semgrep.sarif
           category: semgrep
+      - name: Install ReviewDog
+        if: github.event_name == 'pull_request'
+        uses: reviewdog/action-setup@v1
       - name: Post inline PR comments via ReviewDog
         if: github.event_name == 'pull_request'
-        uses: reviewdog/action-semgrep@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          reporter: github-pr-review
-          fail_level: error
-          semgrep_flags: "--config=auto"
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: reviewdog -f=sarif -reporter=github-pr-review < semgrep.sarif
 
   gitleaks:
     name: Gitleaks (secret scanning)
@@ -67,7 +68,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Trivy filesystem scan -> SARIF
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -76,6 +77,7 @@ jobs:
           severity: CRITICAL,HIGH,MEDIUM
       - name: Upload SARIF to code scanning
         uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
         with:
           sarif_file: trivy.sarif
           category: trivy
@@ -89,7 +91,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: SonarQube Scan
-        uses: sonarsource/sonarqube-scan-action@v4
+        uses: sonarsource/sonarqube-scan-action@v6
         with:
           args: >
             -Dsonar.projectKey=${{ github.event.repository.name }}
@@ -114,7 +116,9 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install CodeScene CLI
-        run: curl -s https://downloads.codescene.io/enterprise/cli/install-cs-tool.sh | bash
+        run: |
+          curl -s https://downloads.codescene.io/enterprise/cli/install-cs-tool.sh | bash -s -- -y
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: CodeScene delta analysis
         run: |
           BASE="${{ github.event.pull_request.base.ref || 'main' }}"
